@@ -23,7 +23,12 @@ import { errorMessage } from '../utils/apiErrors';
 import { displayStatus, statusTitle } from '../utils/status';
 import { buildFlat, buildOrdered, type FlatPost, type OrderedPost } from '../utils/thread';
 import { recordRecentThread } from '../utils/recentThreads';
-import { getThreadSeen, markSeenAfter } from '../utils/readState';
+import {
+  getThreadSeen,
+  markSeenAfter,
+  markThreadSeen,
+  useThreadReadMap,
+} from '../utils/readState';
 import { scrollIntoViewMotionSafe } from '../utils/motion';
 import { useCurrentUser, useThread } from '../hooks/api';
 import { useKeyboardShortcuts } from '../utils/useKeyboardShortcuts';
@@ -144,6 +149,24 @@ export default function Thread() {
     if (composerRef.current) scrollIntoViewMotionSafe(composerRef.current, { block: 'start' });
   }, []);
 
+  const readMap = useThreadReadMap();
+  const unreadCount = threadData
+    ? Math.max(
+        0,
+        threadData.mainPost.repliesCount -
+          (readMap[threadData.mainPost.id]?.seenReplies ?? 0),
+      )
+    : 0;
+
+  const markAllRead = useCallback(() => {
+    if (!threadData) return;
+    // The pending dwell write would record the same snapshot; cancel it so the
+    // explicit action is the only writer.
+    dwellCancelRef.current?.();
+    dwellCancelRef.current = null;
+    markThreadSeen(threadData.mainPost.id, threadData.mainPost.repliesCount);
+  }, [threadData]);
+
   // Bring the composer into view whenever a reply target is set (Reply button or `r`).
   useEffect(() => {
     if (replyTo) scrollToComposer();
@@ -257,6 +280,8 @@ export default function Thread() {
           view={view}
           onViewChange={(v) => updateSettings({ threadView: v })}
           onJumpToReply={scrollToComposer}
+          unreadCount={unreadCount}
+          onMarkRead={markAllRead}
         />
       )}
 
