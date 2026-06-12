@@ -1,0 +1,24 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background-color: var(--cds-tag-background-blue, var(--cds-layer-accent));
+  /* Pair the blue tag background with Carbon's matched (AA-contrast) text token,
+     not link-primary — the latter fails 4.5:1 on the light-blue background. */
+  color: var(--cds-tag-color-blue, var(--cds-text-primary));
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.pill:hover {
+  background-color: var(--cds-layer-accent-hover);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}

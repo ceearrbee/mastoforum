@@ -1,0 +1,161 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.searchRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cds-text-secondary);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clearButton {
+  background: transparent;
+  border: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.clearButton:hover {
+  color: var(--cds-text-primary);
+  background-color: var(--cds-layer-hover);
+}
+
+.clearButton:focus-visible {
+  outline: 2px solid var(--cds-focus);
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tabPanel {
+  padding: 1rem 0 0 0;
+}
+
+.recents {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.postList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.postListItem a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--cds-text-primary);
+}
+
+.postListItem a:hover {
+  background-color: var(--cds-layer-hover);
+}
+
+.postLinkTitle {
+  font-weight: 600;
+  color: var(--cds-link-primary);
+}
+
+.postLinkMeta {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+}
+
+.onboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.5rem;
+  background-color: var(--cds-layer);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 8px;
+}
+
+.onboardTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.onboardLead {
+  margin: 0;
+  color: var(--cds-text-secondary);
+  line-height: 1.5;
+  max-width: 52ch;
+}
+
+.onboardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.onboardHint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+}
+
+.signin {
+  max-width: 28rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+}
+
+.signinTitle {
+  margin: 0 0 0.5rem;
+}
+
+.signinLead {
+  margin: 0 0 2rem;
+  color: var(--cds-text-secondary);
+}

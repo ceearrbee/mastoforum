@@ -1,0 +1,68 @@
+{
+  "name": "mastoforum",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Forum-style web client for Mastodon",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceearrbee/mastoforum"
+  },
+  "bugs": {
+    "url": "https://github.com/ceearrbee/mastoforum/issues"
+  },
+  "keywords": [
+    "mastodon",
+    "fediverse",
+    "forum",
+    "client",
+    "react"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@carbon/icons-react": "^11.81.0",
+    "@carbon/react": "^1.108.0",
+    "@carbon/styles": "^1.107.0",
+    "@tanstack/react-query": "^5.100.14",
+    "dompurify": "^3.4.7",
+    "easymde": "^2.21.0",
+    "masto": "^7.11.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1",
+    "react-simplemde-editor": "^5.2.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.12.3",
+    "@types/react": "^19.2.14",
+    "@types/codemirror": "^5.60.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.7",
+    "axe-core": "^4.11.4",
+    "codemirror": "^5.65.21",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "jsdom": "^29.1.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12",
+    "vitest": "^4.1.7"
+  }
+}

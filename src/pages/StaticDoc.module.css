@@ -1,0 +1,40 @@
+.doc {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 0 1rem 4rem;
+  line-height: 1.6;
+}
+
+.doc h1 {
+  font-size: 1.75rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem 0;
+}
+
+.doc h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 2rem 0 0.5rem;
+}
+
+.doc p,
+.doc ul {
+  margin: 0 0 1rem 0;
+}
+
+.doc ul {
+  padding-left: 1.25rem;
+}
+
+.doc code {
+  font-size: 0.875em;
+  padding: 0.125rem 0.25rem;
+  background-color: var(--cds-layer);
+  border-radius: 3px;
+}
+
+.updated {
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 2rem;
+}

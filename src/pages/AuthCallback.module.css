@@ -1,0 +1,17 @@
+.errorPage {
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.actions {
+  margin-top: 1.5rem;
+}
+
+.loadingPage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  min-height: 100vh;
+}

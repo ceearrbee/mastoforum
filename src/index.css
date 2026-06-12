@@ -1,0 +1,93 @@
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.post-content p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.post-content p:last-child {
+  margin-bottom: 0;
+}
+
+.post-content a {
+  color: var(--cds-link);
+  text-decoration: none;
+}
+
+.post-content a:hover {
+  text-decoration: underline;
+}
+
+/* Dark mode fixes for SimpleMDE */
+@media (prefers-color-scheme: dark) {
+  .editor-toolbar {
+    background: var(--cds-layer);
+    border-color: var(--cds-border-strong);
+  }
+  .editor-toolbar > button {
+    color: var(--cds-icon) !important;
+  }
+  .editor-toolbar > button:hover {
+    background: var(--cds-border-subtle);
+  }
+  .CodeMirror {
+    background: var(--cds-field);
+    color: var(--cds-text-primary);
+    border-color: var(--cds-border-strong);
+  }
+  .editor-preview {
+    background: var(--cds-field);
+    color: var(--cds-text-primary);
+  }
+}
+
+/* Reading-width: wide setting lets the main column use more of the viewport.
+   The main column's inner wrapper is `main > div`; narrow keeps the module
+   default (~780px), wide expands it toward the full viewport. */
+.app-root.width-wide main > div {
+  max-width: min(1400px, 100%);
+}
+
+/* Compact density tightens the post card vertical rhythm and list spacing. */
+.density-compact article {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.density-compact .app-root,
+.app-root.density-compact main {
+  font-size: 0.9375rem;
+}
+
+/* ── High-contrast mode (theme = hc-light / hc-dark) ───────────────────────
+   Carbon's white/g100 tokens already give the strongest light/dark palettes;
+   here we firm up borders and focus rings so structure stays legible. */
+.app-root.hc {
+  --cds-border-subtle: var(--cds-border-strong);
+}
+.app-root.hc *:focus-visible {
+  outline: 3px solid var(--cds-focus) !important;
+  outline-offset: 2px;
+}
+.app-root.hc a {
+  text-decoration: underline;
+}

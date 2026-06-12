@@ -1,0 +1,63 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 6px;
+  background-color: var(--cds-layer);
+  min-width: 0;
+}
+
+.dismiss {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  color: var(--cds-text-primary);
+  min-width: 0;
+  padding-right: 1.5rem;
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.head:hover .name {
+  text-decoration: underline;
+}
+
+.acct {
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bio {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+}
+
+.actions {
+  margin-top: auto;
+}

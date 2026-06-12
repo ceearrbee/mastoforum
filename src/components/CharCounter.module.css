@@ -1,0 +1,12 @@
+.counter {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--cds-text-secondary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.counter[data-over='true'] {
+  color: var(--cds-text-error, #da1e28);
+  font-weight: 600;
+}

@@ -1,0 +1,133 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+}
+
+/* Skip link: off-screen until focused, then pinned to the top-left. */
+.skipLink {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  transform: translateY(-150%);
+  padding: 0.5rem 1rem;
+  background-color: var(--cds-layer);
+  color: var(--cds-link-primary);
+  border: 1px solid var(--cds-border-strong);
+  border-radius: 0 0 4px 0;
+  text-decoration: none;
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+  outline: 2px solid var(--cds-focus);
+}
+
+.main:focus {
+  outline: none;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.main {
+  width: 100%;
+  min-width: 0;
+  padding: 1.5rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mainInner {
+  width: 100%;
+  max-width: 780px;
+}
+
+/* ── Rail / drawer ────────────────────────────────────────────────────── */
+/* Below the rail breakpoint, the rail is an overlay drawer. */
+.rail {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  bottom: 0;
+  width: min(80vw, 320px);
+  background-color: var(--cds-background);
+  border-right: 1px solid var(--cds-border-subtle);
+  z-index: 50;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 200ms ease;
+}
+
+.shell.navOpen .rail {
+  transform: translateX(0);
+}
+
+/* At the rail breakpoint, the rail becomes a sticky in-flow column. */
+@media (min-width: 1024px) {
+  .rail {
+    position: sticky;
+    top: 56px;
+    transform: none;
+    transition: none;
+    align-self: start;
+    height: calc(100vh - 56px);
+    background-color: var(--cds-layer);
+    width: 240px;
+    display: none;
+  }
+  .shell.navOpen .rail {
+    display: block;
+  }
+  .shell.navOpen .body {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+/* ── Scrim (mobile drawer backdrop) ───────────────────────────────────── */
+.scrim {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Reset native <button> chrome — this is a full-bleed backdrop, not a chip. */
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 49;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.shell.navOpen .scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Respect users who prefer reduced motion: drop the drawer/scrim animation. */
+@media (prefers-reduced-motion: reduce) {
+  .rail,
+  .scrim,
+  .skipLink {
+    transition: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .scrim,
+  .shell.navOpen .scrim {
+    display: none;
+  }
+}

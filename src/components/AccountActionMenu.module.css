@@ -1,0 +1,11 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.error {
+  font-size: 0.75rem;
+  color: var(--cds-text-error);
+  margin-right: 0.5rem;
+}

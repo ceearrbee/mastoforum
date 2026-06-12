@@ -1,0 +1,139 @@
+.trigger {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 4px;
+}
+
+.trigger:hover {
+  background-color: var(--cds-layer-hover);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}
+
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 70;
+  width: 320px;
+  max-width: calc(100vw - 2rem);
+  background-color: var(--cds-layer);
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.identity {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.displayName {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.handle {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  word-break: break-all;
+}
+
+.bio {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--cds-text-primary);
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.bio :global(p) {
+  margin: 0 0 0.5rem 0;
+}
+
+.bio :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--cds-border-subtle);
+  font-size: 0.75rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+}
+
+.statLabel {
+  color: var(--cds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.6875rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profileLink {
+  font-size: 0.75rem;
+  color: var(--cds-link-primary);
+  text-decoration: none;
+}
+
+.profileLink:hover,
+.profileLink:focus-visible {
+  text-decoration: underline;
+}
+
+.profileLink:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}

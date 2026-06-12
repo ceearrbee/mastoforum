@@ -1,0 +1,35 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.75rem 1rem;
+  border: 1px solid var(--cds-border-subtle);
+  border-left: 3px solid var(--cds-support-info);
+  border-radius: 4px;
+  background-color: var(--cds-layer);
+}
+
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--cds-text-primary);
+}
+
+.content :global(p) {
+  margin: 0 0 0.5rem;
+}
+
+.content :global(p:last-child) {
+  margin-bottom: 0;
+}
+
+.dismiss {
+  flex: 0 0 auto;
+}
