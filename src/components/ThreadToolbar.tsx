@@ -1,8 +1,4 @@
-/*
- * The view toggle is a segmented control: a role="group" of aria-pressed buttons.
- * <fieldset> (the prefer-native-tag suggestion) is for form field grouping and
- * brings UA chrome that doesn't fit a button toolbar, so the role is intentional.
- */
+// The view toggle is a segmented control: a role="group" of aria-pressed buttons.
 import { Button } from '@carbon/react';
 import { Checkmark, ChevronDown } from '@carbon/icons-react';
 import type { ThreadView } from '../context/SettingsContext';
@@ -31,8 +27,6 @@ export default function ThreadToolbar({
         {postCount} {postCount === 1 ? 'post' : 'posts'}
       </div>
       <div className={styles.right}>
-        {/* role="group" is the right semantic for a toggle-button set; the
-            suggested native tags (fieldset etc.) are form-field containers. */}
         {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
         <div className={styles.viewToggle} role="group" aria-label="Thread view">
           <button

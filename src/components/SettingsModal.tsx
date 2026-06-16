@@ -122,6 +122,15 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           onToggle={(checked) => updateSettings({ showAdvancedVisibilities: checked })}
         />
 
+        <Toggle
+          id="keep-nav-open"
+          labelText="Keep navigation menu open"
+          labelA="Off"
+          labelB="On"
+          toggled={settings.keepNavOpen}
+          onToggle={(checked) => updateSettings({ keepNavOpen: checked })}
+        />
+
         <TextArea
           id="custom-css"
           labelText="Custom CSS"

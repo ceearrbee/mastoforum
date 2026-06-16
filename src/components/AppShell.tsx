@@ -8,6 +8,7 @@ import LeftRail from './LeftRail';
 import RateLimitToast from './RateLimitToast';
 import Toaster from './Toaster';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { RAIL_BREAKPOINT } from '../config';
 import styles from './AppShell.module.css';
 
@@ -16,18 +17,24 @@ const isDesktopViewport = () => window.matchMedia(desktopQuery).matches;
 
 export default function AppShell() {
   const { credentials } = useAuth();
-  const [navOpen, setNavOpen] = useState(isDesktopViewport);
+  const { settings } = useSettings();
+  const [navOpen, setNavOpen] = useState(() => isDesktopViewport() || settings.keepNavOpen);
   const location = useLocation();
   const [navPath, setNavPath] = useState(location.pathname);
 
-  // Close the mobile drawer when the route changes. This is React's endorsed
-  // "adjust state while rendering" pattern for resetting state in response to a
-  // changing value (react.dev — "You Might Not Need an Effect"): the guarded
-  // setState during render is cheaper than, and preferred over, an effect (which
-  // would cause a cascading render and trip `react-hooks/set-state-in-effect`).
+  // Switching the "keep navigation open" preference on should reveal the nav
+  // immediately.
+  const [navPinned, setNavPinned] = useState(settings.keepNavOpen);
+  if (navPinned !== settings.keepNavOpen) {
+    setNavPinned(settings.keepNavOpen);
+    if (settings.keepNavOpen) setNavOpen(true);
+  }
+
+  // Close the mobile drawer when the route changes, adjusting state during
+  // render rather than in an effect.
   if (navPath !== location.pathname) {
     setNavPath(location.pathname);
-    if (!isDesktopViewport()) setNavOpen(false);
+    if (!isDesktopViewport() && !settings.keepNavOpen) setNavOpen(false);
   }
 
   const closeNav = useCallback(() => setNavOpen(false), []);
@@ -36,7 +43,11 @@ export default function AppShell() {
   const showRail = credentials != null;
 
   return (
-    <div className={`${styles.shell} ${navOpen ? styles.navOpen : ''}`}>
+    <div
+      className={`${styles.shell} ${navOpen ? styles.navOpen : ''} ${
+        settings.keepNavOpen ? styles.pinned : ''
+      }`}
+    >
       <a href="#main" className={styles.skipLink}>
         Skip to main content
       </a>

@@ -91,6 +91,30 @@
   }
 }
 
+/* When the user pins the nav open ("Keep navigation menu open"), the rail
+   becomes an in-flow column that pushes content aside at every width — the same
+   layout the ≥1024px block applies — instead of an overlay drawer. */
+.shell.pinned .rail {
+  position: sticky;
+  top: 56px;
+  transform: none;
+  transition: none;
+  align-self: start;
+  height: calc(100vh - 56px);
+  background-color: var(--cds-layer);
+  width: 240px;
+  display: none;
+}
+.shell.pinned.navOpen .rail {
+  display: block;
+}
+.shell.pinned.navOpen .body {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.shell.pinned .scrim {
+  display: none;
+}
+
 /* ── Scrim (mobile drawer backdrop) ───────────────────────────────────── */
 .scrim {
   position: fixed;

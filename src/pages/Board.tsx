@@ -1,8 +1,4 @@
-/*
- * The sort pills are a segmented control: a role="group" of buttons. <fieldset>
- * (the prefer-native-tag suggestion) is for form field grouping and brings UA
- * chrome that doesn't fit a button group, so the role is intentional.
- */
+// The sort pills are a segmented control: a role="group" of buttons.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -132,8 +128,6 @@ export default function Board() {
       </div>
 
       <div className={styles.toolbar}>
-        {/* role="group" is the right semantic for a toggle-button set; the
-            suggested native tags (fieldset etc.) are form-field containers. */}
         {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
         <div className={styles.sortPills} role="group" aria-label="Sort topics">
           {SORTS.map((s) => (

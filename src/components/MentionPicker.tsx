@@ -1,10 +1,6 @@
 /* eslint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
-/*
- * This popover implements the W3C ARIA "listbox" autocomplete pattern, where the
- * list/options are roles on <ul>/<li> rather than native <select>/<option> (which
- * can't render avatars or be styled as a free-floating overlay). The roles are
- * intentional, so the prefer-native-tag heuristics don't apply here.
- */
+// A listbox autocomplete on <ul>/<li> — a native <select> can't render avatar
+// rows or float as an overlay.
 import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
 import EmojiText from './EmojiText';

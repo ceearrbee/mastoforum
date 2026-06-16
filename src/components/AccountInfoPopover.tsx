@@ -1,8 +1,5 @@
-/*
- * The popover uses role="dialog" rather than the native <dialog> element: it is a
- * non-modal, custom-positioned overlay dismissed on outside-click, not a modal with
- * a backdrop, so <dialog>'s show/showModal semantics don't fit. The role is intentional.
- */
+// A non-modal, anchored overlay dismissed on outside-click, so it uses
+// role="dialog" rather than the native <dialog> element.
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type { mastodon } from 'masto';
 import AccountActionMenu from './AccountActionMenu';
@@ -94,8 +91,6 @@ export default function AccountInfoPopover({ account, children }: Props) {
           ref={popoverRef}
           className={styles.popover}
           id={popoverId}
-          // An anchored popover: native <dialog> would move it to the top layer
-          // and break the anchor positioning, so the role is intentional.
           // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
           role="dialog"
           aria-label="Account information"

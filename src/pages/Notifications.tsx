@@ -52,8 +52,6 @@ export default function Notifications() {
     isFetchingNextPage,
   } = useNotificationsList();
 
-  // `mutate` is referentially stable in TanStack Query v5, so it's a safe effect
-  // dependency — no `exhaustive-deps` suppression needed.
   const { mutate: markRead } = useMutation({
     mutationFn: async (lastReadId: string) =>
       requireClient(client).v1.markers.create({ notifications: { lastReadId } }),

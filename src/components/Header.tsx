@@ -1,9 +1,5 @@
-/*
- * The header search is a W3C ARIA combobox: role="combobox" on the input drives a
- * listbox of suggestions, wrapped in a role="search" landmark. The Carbon <Search>
- * already renders a focusable <input>, so the combobox/search roles are the
- * intended accessible markup.
- */
+// The header search is a combobox: role="combobox" on the input drives a
+// listbox of tag suggestions, wrapped in a role="search" landmark.
 import { useActionState, useId, useMemo, useState, type ComponentType } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -83,9 +79,7 @@ export default function Header({ onMenuToggle, menuExpanded = false }: Props) {
     [hashtags],
   );
 
-  // Reset the highlighted option whenever the suggestion query changes. This is
-  // React's "adjust state while rendering" pattern (react.dev), preferred over an
-  // effect for deriving state from a changing value.
+  // Reset the highlighted option whenever the suggestion query changes.
   const [seenQuery, setSeenQuery] = useState(debouncedTagQuery);
   if (seenQuery !== debouncedTagQuery) {
     setSeenQuery(debouncedTagQuery);
@@ -174,9 +168,7 @@ export default function Header({ onMenuToggle, menuExpanded = false }: Props) {
         {credentials ? (
           <search className={styles.search}>
             <form onSubmit={submitSearch}>
-              {/* Carbon's <Search> renders a real, focusable <input>; the linter
-                  can't see through the component, so both combobox findings below
-                  are false positives. */}
+              {/* Carbon's <Search> renders the focusable <input>. */}
               {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus */}
               <Search
                 id="header-search"

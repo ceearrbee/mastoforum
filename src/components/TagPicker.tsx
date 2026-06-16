@@ -1,9 +1,6 @@
 /* eslint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
-/*
- * Implements the W3C ARIA "listbox" autocomplete pattern: list/options are roles
- * on <ul>/<li> rather than native <select>/<option>, which can't render the rich
- * rows or work as a free-floating overlay. The roles are intentional here.
- */
+// A listbox autocomplete on <ul>/<li> — a native <select> can't render the rich
+// rows or float as an overlay.
 import styles from './ComposerAutocomplete.module.css';
 
 export interface TagSuggestion {

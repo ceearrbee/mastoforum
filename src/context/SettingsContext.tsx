@@ -14,6 +14,7 @@ export interface Settings {
   threadView: ThreadView;
   readingWidth: ReadingWidth;
   showAdvancedVisibilities: boolean;
+  keepNavOpen: boolean;
   customCss: string;
 }
 
@@ -29,6 +30,7 @@ const defaultSettings: Settings = {
   threadView: 'flat',
   readingWidth: 'narrow',
   showAdvancedVisibilities: false,
+  keepNavOpen: false,
   customCss: '',
 };
 
