@@ -1,42 +1,20 @@
-// The sort pills are a segmented control: a role="group" of buttons.
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/icons-react';
-import type { mastodon } from 'masto';
 import { useAuth } from '../context/AuthContext';
 import { requireClient } from '../utils/client';
 import PageHeading from '../components/PageHeading';
 import PaginatedList from '../components/PaginatedList';
 import StatusComposerModal from '../components/StatusComposerModal';
+import SortPills from '../components/SortPills';
 import TopicRow from '../components/TopicRow';
 import { useBoardTimeline, useTagInfo } from '../hooks/api';
 import { errorMessage } from '../utils/apiErrors';
 import { pushToast } from '../utils/toast';
+import { sortPosts, type SortKey } from '../utils/sortPosts';
 import styles from './Board.module.css';
-
-type SortKey = 'activity' | 'newest' | 'replies';
-
-const SORTS: { key: SortKey; label: string }[] = [
-  { key: 'activity', label: 'Latest activity' },
-  { key: 'newest', label: 'Newest' },
-  { key: 'replies', label: 'Most replies' },
-];
-
-function sortPosts(posts: mastodon.v1.Status[], key: SortKey): mastodon.v1.Status[] {
-  const copy = posts.slice();
-  switch (key) {
-    case 'newest':
-      return copy.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-    case 'replies':
-      return copy.sort((a, b) => b.repliesCount - a.repliesCount);
-    case 'activity':
-      return copy;
-  }
-}
 
 export default function Board() {
   const { tag } = useParams<{ tag: string }>();
@@ -128,20 +106,7 @@ export default function Board() {
       </div>
 
       <div className={styles.toolbar}>
-        {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
-        <div className={styles.sortPills} role="group" aria-label="Sort topics">
-          {SORTS.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              className={styles.sortPill}
-              aria-pressed={sort === s.key}
-              onClick={() => setSort(s.key)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <SortPills value={sort} onChange={setSort} />
       </div>
 
       <PaginatedList

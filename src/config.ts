@@ -16,6 +16,9 @@ export const SCOPES = 'read write';
 /** How many topic rows to fetch per Board page. */
 export const BOARD_PAGE_SIZE = 40;
 
+/** How many statuses to fetch per Feed page (before replies are filtered out). */
+export const FEED_PAGE_SIZE = 40;
+
 /** How many entries to keep in the recent-threads list. */
 export const RECENT_THREADS_LIMIT = 15;
 

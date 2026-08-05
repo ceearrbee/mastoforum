@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import type { FeedSource } from '../hooks/api/useFeedTimeline';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export type ThemeType = 'auto' | 'light' | 'dark' | 'hc-light' | 'hc-dark';
@@ -6,6 +7,8 @@ export type VisibilityType = 'public' | 'unlisted' | 'private' | 'direct';
 export type DensityType = 'cozy' | 'compact';
 export type ThreadView = 'flat' | 'tree';
 export type ReadingWidth = 'narrow' | 'wide';
+export type LandingPage = 'home' | 'feed';
+export type { FeedSource };
 
 export interface Settings {
   theme: ThemeType;
@@ -15,6 +18,8 @@ export interface Settings {
   readingWidth: ReadingWidth;
   showAdvancedVisibilities: boolean;
   keepNavOpen: boolean;
+  landingPage: LandingPage;
+  feedSource: FeedSource;
   customCss: string;
 }
 
@@ -31,6 +36,8 @@ const defaultSettings: Settings = {
   readingWidth: 'narrow',
   showAdvancedVisibilities: false,
   keepNavOpen: false,
+  landingPage: 'home',
+  feedSource: 'home',
   customCss: '',
 };
 

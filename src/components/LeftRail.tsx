@@ -35,6 +35,16 @@ export default function LeftRail({ onNavigate }: Props) {
       <section className={styles.section}>
         <ul className={styles.list}>
           <li>
+            <NavLink to="/home" className={styles.link} onClick={onNavigate}>
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/feed" className={styles.link} onClick={onNavigate}>
+              Feed
+            </NavLink>
+          </li>
+          <li>
             <NavLink to="/messages" className={styles.link} onClick={onNavigate}>
               Messages
             </NavLink>

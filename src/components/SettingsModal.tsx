@@ -19,6 +19,7 @@ import { sanitizeCustomCss } from '../utils/customCss';
 import FiltersPanel from './FiltersPanel';
 import type {
   DensityType,
+  LandingPage,
   ReadingWidth,
   ThemeType,
   ThreadView,
@@ -87,6 +88,16 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
         >
           <SelectItem value="flat" text="Flat chronological" />
           <SelectItem value="tree" text="Indented tree" />
+        </Select>
+
+        <Select
+          id="landing-page-select"
+          labelText="Landing page"
+          value={settings.landingPage}
+          onChange={(e) => updateSettings({ landingPage: e.target.value as LandingPage })}
+        >
+          <SelectItem value="home" text="Home" />
+          <SelectItem value="feed" text="Feed" />
         </Select>
 
         <Select

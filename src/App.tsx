@@ -13,6 +13,7 @@ import { APP_CONFIG } from './config';
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 
 const Home = lazy(() => import('./pages/Home'));
+const Feed = lazy(() => import('./pages/Feed'));
 const Board = lazy(() => import('./pages/Board'));
 const Thread = lazy(() => import('./pages/Thread'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
@@ -86,7 +87,16 @@ function ThemedApp() {
               <Suspense fallback={<Loading description="Loading" withOverlay={false} />}>
                 <Routes>
                   <Route element={<AppShell />}>
-                    <Route path="/" element={<Home />} />
+                    <Route
+                      path="/"
+                      element={
+                        settings.landingPage === 'feed' ? <Feed /> : <Home />
+                      }
+                    />
+                    {/* `/` follows the landing-page preference, so Home and Feed
+                        each need their own path to stay reachable either way. */}
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/feed" element={<Feed />} />
                     <Route path="/board/:tag" element={<Board />} />
                     <Route path="/thread/:id" element={<Thread />} />
                     <Route path="/notifications" element={<Notifications />} />

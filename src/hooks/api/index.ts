@@ -14,6 +14,7 @@ export { useFollowRequests } from './useFollowRequests';
 export { useScheduledStatuses } from './useScheduledStatuses';
 export { useAccountStatuses } from './useAccountStatuses';
 export { useListTimeline } from './useListTimeline';
+export { useFeedTimeline, type FeedSource } from './useFeedTimeline';
 // Badge counts + discovery + live search, centralised out of components.
 export { useNotificationCount } from './useNotificationCount';
 export { useUnreadConversationCount } from './useUnreadConversationCount';
