@@ -15,6 +15,7 @@ import { errorMessage } from '../utils/apiErrors';
 import { getMaxCharacters, supportsLocalOnly } from '../utils/instanceConfig';
 import { cleanPollOptions, isPollValid } from '../utils/poll';
 import { createStatusWithLocalFallback } from '../utils/composeStatus';
+import { estimateResolvedContent, resolveRollCommands } from '../utils/ttrpg/format';
 import CharCounter from './CharCounter';
 import ComposerEditor from './ComposerEditor';
 import PollComposer, { type PollDraft } from './PollComposer';
@@ -52,6 +53,8 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
   const [poll, setPoll] = useState<PollDraft | null>(null);
   const [error, setError] = useState('');
 
+  const tabletop = settings.tabletopTools;
+
   // Re-seed during render whenever the open session changes.
   if (open && seededFor !== sessionKey) {
     setSeededFor(sessionKey);
@@ -74,8 +77,10 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!client) throw new Error('Not authenticated');
-      const trimmed = content.trim();
-      if (!trimmed) throw new Error('Post content cannot be empty');
+      const raw = content.trim();
+      if (!raw) throw new Error('Post content cannot be empty');
+      // Bake any pending `/roll` so every client sees the same numbers.
+      const trimmed = tabletop ? resolveRollCommands(raw) : raw;
       if (mode.kind === 'new-topic') {
         if (poll && !isPollValid(poll.options)) {
           throw new Error('A poll needs at least two distinct, non-empty options');
@@ -120,7 +125,8 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
   const submitText = mode.kind === 'new-topic' ? 'Post topic' : 'Save changes';
 
   const maxChars = getMaxCharacters();
-  const remaining = maxChars - (graphemeLength(content) + graphemeLength(spoilerText));
+  const counted = tabletop ? estimateResolvedContent(content) : content;
+  const remaining = maxChars - (graphemeLength(counted) + graphemeLength(spoilerText));
   const overLimit = remaining < 0;
   const pollOk = !poll || isPollValid(poll.options);
   const showLocalVisibility = settings.showAdvancedVisibilities && supportsLocalOnly();

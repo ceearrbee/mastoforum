@@ -19,6 +19,7 @@ import PollRenderer from './PollRenderer';
 import QuoteContext from './QuoteContext';
 import SanitizedHtml from './SanitizedHtml';
 import VisuallyHidden from './VisuallyHidden';
+import { useSettings } from '../context/SettingsContext';
 import { boosterOf, displayNameOf, displayStatus } from '../utils/status';
 import styles from './PostCard.module.css';
 
@@ -71,6 +72,7 @@ export default function PostCard({
   tabIndex,
   highlighted,
 }: Props) {
+  const { settings } = useSettings();
   const [historyOpen, setHistoryOpen] = useState(false);
   const indent = clampDepth(depth);
   const className = [
@@ -157,6 +159,7 @@ export default function PostCard({
             className={`${styles.body} post-content`}
             html={display.content}
             emojis={display.emojis}
+            enhanceTabletop={settings.tabletopTools}
           />
         </details>
       ) : (
@@ -164,6 +167,7 @@ export default function PostCard({
           className={`${styles.body} post-content`}
           html={display.content}
           emojis={display.emojis}
+          enhanceTabletop={settings.tabletopTools}
         />
       )}
 

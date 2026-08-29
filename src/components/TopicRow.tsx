@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
 import EmojiText from './EmojiText';
+import SanitizedHtml from './SanitizedHtml';
 import TagPill from './TagPill';
 import { useThreadReadMap } from '../utils/readState';
 import { boosterOf, displayNameOf, displayStatus, statusTitle } from '../utils/status';
@@ -13,9 +14,19 @@ interface Props {
   hideTag?: string;
   /** Heading level for the topic title, so callers keep the page hierarchy correct. */
   headingLevel?: 2 | 3 | 4;
+  /** Show the whole post body inline instead of just the title preview. */
+  expanded?: boolean;
+  /** Style tabletop blocks in the expanded body (see the `tabletopTools` setting). */
+  enhanceTabletop?: boolean;
 }
 
-export default function TopicRow({ post, hideTag, headingLevel = 3 }: Props) {
+export default function TopicRow({
+  post,
+  hideTag,
+  headingLevel = 3,
+  expanded = false,
+  enhanceTabletop = false,
+}: Props) {
   // A boost wraps the original status; display the original everywhere.
   const display = displayStatus(post);
   const booster = boosterOf(post);
@@ -53,6 +64,14 @@ export default function TopicRow({ post, hideTag, headingLevel = 3 }: Props) {
           <span aria-hidden="true">·</span>
           <time dateTime={display.createdAt}>{relativeTime(display.createdAt)}</time>
         </p>
+        {expanded && display.content && (
+          <SanitizedHtml
+            className={`${styles.expandedBody} post-content`}
+            html={display.content}
+            emojis={display.emojis}
+            enhanceTabletop={enhanceTabletop}
+          />
+        )}
         {tags.length > 0 && (
           <div className={styles.tags}>
             {tags.slice(0, 4).map((tag) => (

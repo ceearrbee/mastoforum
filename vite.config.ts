@@ -1,8 +1,35 @@
 import { defineConfig, configDefaults } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { copyFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+const git = (...args: string[]): string =>
+  execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+
+/**
+ * Short commit for the footer's build stamp. Falls back to the CI-provided SHA
+ * (GitHub Actions checkouts are shallow but do carry `GITHUB_SHA`) and finally
+ * to a placeholder, so a tarball build with no git available still succeeds.
+ */
+function buildCommit(): string {
+  try {
+    return `${git('rev-parse', '--short', 'HEAD')}${git('status', '--porcelain') ? '-dirty' : ''}`;
+  } catch {
+    return process.env.GITHUB_SHA?.slice(0, 7) ?? 'unknown';
+  }
+}
+
+function appVersion(): string {
+  try {
+    const pkg: unknown = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'));
+    const version = (pkg as { version?: unknown }).version;
+    return typeof version === 'string' ? version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
 
 /**
  * GitHub Pages has no SPA rewrite, so unknown deep links (and the OAuth
@@ -31,6 +58,13 @@ export default defineConfig(({ mode }) => {
     // workflow derives it from the repo name); defaults to '/' for dev and root.
     base: process.env.VITE_BASE || '/',
     plugins: [react(), spaFallback()],
+    // Baked in at build time and surfaced in the footer, so a deployed page can
+    // be tied back to the exact commit it was built from.
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion()),
+      __BUILD_COMMIT__: JSON.stringify(buildCommit()),
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
     test: {
       environment: 'jsdom',
       globals: true,

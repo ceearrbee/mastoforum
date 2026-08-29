@@ -142,6 +142,22 @@ export default function SettingsModal({ open, onClose }: SettingsModalProps) {
           onToggle={(checked) => updateSettings({ keepNavOpen: checked })}
         />
 
+        <div>
+          <Toggle
+            id="tabletop-tools"
+            labelText="Tabletop tools"
+            labelA="Off"
+            labelB="On"
+            toggled={settings.tabletopTools}
+            onToggle={(checked) => updateSettings({ tabletopTools: checked })}
+          />
+          <p className="cds--form__helper-text">
+            Adds dice, in-character speech, OOC and character-sheet tools to the composer, and
+            styles those blocks in posts. Everything is posted as plain text, so other clients
+            still read it.
+          </p>
+        </div>
+
         <TextArea
           id="custom-css"
           labelText="Custom CSS"

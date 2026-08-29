@@ -1,8 +1,12 @@
+import type { WritingMode } from '../components/TabletopToolbar';
+
 const PREFIX = 'mastoforum_draft:';
 
 export interface Draft {
   content: string;
   spoilerText: string;
+  /** Prose/Table choice for this thread, when the tabletop tools are enabled. */
+  mode: WritingMode;
   updatedAt: number;
 }
 
@@ -19,6 +23,7 @@ export function getDraft(threadId: string): Draft | null {
     return {
       content: parsed.content,
       spoilerText: typeof parsed.spoilerText === 'string' ? parsed.spoilerText : '',
+      mode: parsed.mode === 'table' ? 'table' : 'prose',
       updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : Date.now(),
     };
   } catch {
@@ -26,13 +31,17 @@ export function getDraft(threadId: string): Draft | null {
   }
 }
 
-export function saveDraft(threadId: string, draft: { content: string; spoilerText: string }): void {
+export function saveDraft(
+  threadId: string,
+  draft: { content: string; spoilerText: string; mode?: WritingMode },
+): void {
   try {
-    if (!draft.content.trim() && !draft.spoilerText.trim()) {
+    const mode = draft.mode ?? 'prose';
+    if (!draft.content.trim() && !draft.spoilerText.trim() && mode === 'prose') {
       clearDraft(threadId);
       return;
     }
-    const payload: Draft = { ...draft, updatedAt: Date.now() };
+    const payload: Draft = { ...draft, mode, updatedAt: Date.now() };
     localStorage.setItem(key(threadId), JSON.stringify(payload));
   } catch {
     /* localStorage may be unavailable */

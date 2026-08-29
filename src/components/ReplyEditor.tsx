@@ -20,8 +20,14 @@ import { graphemeLength } from '../utils/text';
 import { getMaxCharacters, getMediaLimits, supportsLocalOnly } from '../utils/instanceConfig';
 import { cleanPollOptions, isPollValid } from '../utils/poll';
 import { createStatusWithLocalFallback } from '../utils/composeStatus';
+import {
+  estimateResolvedContent,
+  hasPendingRolls,
+  resolveRollCommands,
+} from '../utils/ttrpg/format';
 import CharCounter from './CharCounter';
 import ComposerEditor from './ComposerEditor';
+import type { WritingMode } from './TabletopToolbar';
 import PollComposer, { type PollDraft } from './PollComposer';
 import ScheduleField from './ScheduleField';
 import styles from './ReplyEditor.module.css';
@@ -76,11 +82,12 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
   const [success, setSuccess] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [hadDraft, setHadDraft] = useState(!!initialDraft);
+  const [mode, setMode] = useState<WritingMode>(initialDraft?.mode ?? 'prose');
 
   // Persist the draft as the user types (debounced via React batching).
   useEffect(() => {
-    saveDraft(threadId, { content, spoilerText });
-  }, [threadId, content, spoilerText]);
+    saveDraft(threadId, { content, spoilerText, mode });
+  }, [threadId, content, spoilerText, mode]);
 
   // Prefill a quoted block when the reply target changes. Done as
   // derived-state-during-render so each new target only prepends once.
@@ -160,8 +167,13 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
     .map((a) => a.attachmentId!);
 
   const maxChars = getMaxCharacters();
-  const remaining = maxChars - (graphemeLength(content) + graphemeLength(spoilerText));
+  // With the tabletop tools on, a pending `/roll` expands when it's posted, so
+  // budget for its longest possible result rather than the command text.
+  const tabletop = settings.tabletopTools;
+  const counted = tabletop ? estimateResolvedContent(content) : content;
+  const remaining = maxChars - (graphemeLength(counted) + graphemeLength(spoilerText));
   const overLimit = remaining < 0;
+  const pendingRolls = tabletop && hasPendingRolls(content);
   const pollOk = !poll || isPollValid(poll.options);
   const showLocalVisibility = settings.showAdvancedVisibilities && supportsLocalOnly();
 
@@ -185,7 +197,7 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
           ),
       );
       const params: Record<string, unknown> = {
-        status: content,
+        status: tabletop ? resolveRollCommands(content) : content,
         inReplyToId: replyTo?.id ?? threadId,
         visibility,
         spoilerText,
@@ -290,7 +302,13 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
         />
 
         <div style={{ color: 'var(--cds-text-primary)', position: 'relative' }}>
-          <ComposerEditor value={content} onChange={setContent} placeholder="Write your reply…" />
+          <ComposerEditor
+            value={content}
+            onChange={setContent}
+            placeholder="Write your reply…"
+            mode={mode}
+            onModeChange={setMode}
+          />
         </div>
 
         <div className={styles.mediaBar}>
@@ -427,6 +445,9 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
 
           <div className={styles.submitGroup}>
             {postMutation.isPending && <InlineLoading description="Posting…" />}
+            {pendingRolls && (
+              <span className={styles.pendingRolls}>Dice roll on post</span>
+            )}
             <CharCounter remaining={remaining} />
             <Button type="submit" disabled={!canSubmit}>
               Post reply

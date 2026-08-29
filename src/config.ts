@@ -10,6 +10,19 @@ export const APP_CONFIG = {
   repoUrl: import.meta.env.VITE_REPO_URL || 'https://github.com/ceearrbee/mastoforum',
 } as const;
 
+/**
+ * Version stamp baked in at build time by Vite's `define` (see vite.config.ts),
+ * so a deployed page can be tied back to the commit it was built from. The
+ * `typeof` guards keep this importable outside a Vite build, where the
+ * identifiers are simply absent.
+ */
+export const BUILD_INFO = {
+  version: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0',
+  commit: typeof __BUILD_COMMIT__ === 'string' ? __BUILD_COMMIT__ : 'dev',
+  /** ISO-8601 UTC timestamp of the build. */
+  time: typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : '',
+} as const;
+
 /** OAuth scopes requested from the Mastodon instance. */
 export const SCOPES = 'read write';
 

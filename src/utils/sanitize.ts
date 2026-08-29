@@ -1,4 +1,5 @@
 import DOMPurify, { type Config } from 'dompurify';
+import { enhanceTabletopHtml } from './ttrpg/render';
 
 const STATUS_HTML_CONFIG: Config = {
   ALLOWED_TAGS: [
@@ -59,12 +60,25 @@ function escapeAttr(value: string): string {
     .replace(/>/g, '&gt;');
 }
 
+export interface SanitizeOptions {
+  /**
+   * Wrap the plain-text tabletop conventions (dice, speech, OOC, stat blocks)
+   * in styling hooks. Off unless the reader has opted in — see the
+   * `tabletopTools` setting.
+   */
+  enhanceTabletop?: boolean;
+}
+
 export function sanitizeStatusHtml(
   html: string,
   emojis: ReadonlyArray<CustomEmoji> = [],
+  options: SanitizeOptions = {},
 ): string {
   const withEmojis = replaceShortcodes(html ?? '', emojis);
-  return DOMPurify.sanitize(withEmojis, STATUS_HTML_CONFIG);
+  const safe = DOMPurify.sanitize(withEmojis, STATUS_HTML_CONFIG);
+  // Runs on the sanitized output using DOM APIs only, so it can't reintroduce
+  // anything the allow-list just removed.
+  return options.enhanceTabletop ? enhanceTabletopHtml(safe) : safe;
 }
 
 export function stripHtml(html: string): string {

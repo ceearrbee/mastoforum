@@ -20,6 +20,8 @@ export interface Settings {
   keepNavOpen: boolean;
   landingPage: LandingPage;
   feedSource: FeedSource;
+  feedExpanded: boolean;
+  tabletopTools: boolean;
   customCss: string;
 }
 
@@ -38,6 +40,8 @@ const defaultSettings: Settings = {
   keepNavOpen: false,
   landingPage: 'home',
   feedSource: 'home',
+  feedExpanded: false,
+  tabletopTools: false,
   customCss: '',
 };
 

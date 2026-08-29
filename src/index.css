@@ -38,6 +38,51 @@ body {
   text-decoration: underline;
 }
 
+/*
+ * Tabletop blocks. The post body is plain text either way — these classes are
+ * added on render (see utils/ttrpg/render.ts) only when the reader has the
+ * tabletop tools switched on, so nothing here affects an ordinary post.
+ */
+.post-content .tt-dice {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--cds-border-subtle);
+  border-radius: 999px;
+  background-color: var(--cds-layer-accent);
+  font-family: var(--cds-code-01-font-family, monospace);
+  font-size: 0.875em;
+}
+
+.post-content .tt-speech {
+  display: inline-block;
+  padding-left: 0.625rem;
+  border-left: 3px solid var(--cds-border-interactive);
+}
+
+.post-content .tt-speaker {
+  font-weight: 600;
+  color: var(--cds-text-primary);
+}
+
+.post-content .tt-ooc {
+  color: var(--cds-text-secondary);
+  font-size: 0.9375em;
+  font-style: italic;
+}
+
+.post-content .tt-sheet {
+  display: block;
+  margin: 0.5rem 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--cds-border-subtle);
+  border-left: 3px solid var(--cds-border-interactive);
+  background-color: var(--cds-layer-accent);
+  font-family: var(--cds-code-01-font-family, monospace);
+  font-size: 0.875em;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 /* Dark mode fixes for SimpleMDE */
 @media (prefers-color-scheme: dark) {
   .editor-toolbar {

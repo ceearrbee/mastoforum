@@ -11,10 +11,20 @@ interface Props {
   html: string;
   className?: string;
   emojis?: ReadonlyArray<CustomEmoji>;
+  /** Style tabletop blocks (dice, speech, OOC, stat sheets) in this body. */
+  enhanceTabletop?: boolean;
 }
 
-export default function SanitizedHtml({ html, className, emojis = [] }: Props) {
-  const safe = useMemo(() => sanitizeStatusHtml(html, emojis), [html, emojis]);
+export default function SanitizedHtml({
+  html,
+  className,
+  emojis = [],
+  enhanceTabletop = false,
+}: Props) {
+  const safe = useMemo(
+    () => sanitizeStatusHtml(html, emojis, { enhanceTabletop }),
+    [html, emojis, enhanceTabletop],
+  );
   // `safe` is run through DOMPurify (see sanitizeStatusHtml); the markup is
   // already sanitized, so this dangerouslySetInnerHTML is the intended sink.
   // eslint-disable-next-line security/dangerously-set-innerhtml

@@ -15,6 +15,11 @@ const SOURCES: { key: FeedSource; label: string }[] = [
   { key: 'federated', label: 'Federated' },
 ];
 
+const DETAIL: { key: 'collapsed' | 'expanded'; label: string }[] = [
+  { key: 'collapsed', label: 'Titles' },
+  { key: 'expanded', label: 'Full posts' },
+];
+
 const EMPTY_MESSAGE: Record<FeedSource, string> = {
   home: 'No topics in your home timeline yet.',
   local: 'No topics on this instance yet.',
@@ -59,6 +64,12 @@ export default function Feed() {
           label="Feed source"
         />
         <SortPills value={sort} onChange={setSort} />
+        <PillGroup
+          options={DETAIL}
+          value={settings.feedExpanded ? 'expanded' : 'collapsed'}
+          onChange={(key) => updateSettings({ feedExpanded: key === 'expanded' })}
+          label="Post detail"
+        />
       </div>
 
       <PaginatedList
@@ -75,7 +86,13 @@ export default function Feed() {
       >
         <div className={styles.list}>
           {sorted.map((post) => (
-            <TopicRow key={post.id} post={post} headingLevel={2} />
+            <TopicRow
+              key={post.id}
+              post={post}
+              headingLevel={2}
+              expanded={settings.feedExpanded}
+              enhanceTabletop={settings.tabletopTools}
+            />
           ))}
         </div>
       </PaginatedList>

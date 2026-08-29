@@ -26,6 +26,47 @@ function post(overrides: Partial<mastodon.v1.Status> = {}): mastodon.v1.Status {
 }
 
 describe('TopicRow', () => {
+
+  it('shows only the title preview by default', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow post={post({ spoilerText: 'My topic' })} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.post-content')).toBeNull();
+  });
+
+  it('renders the full body when expanded', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow
+          post={post({ spoilerText: 'My topic', content: '<p>The whole body.</p>' })}
+          expanded
+        />
+      </MemoryRouter>,
+    );
+    const body = container.querySelector('.post-content');
+    expect(body).not.toBeNull();
+    expect(body).toHaveTextContent('The whole body.');
+  });
+
+  it('styles tabletop blocks in the expanded body only when asked', () => {
+    const dice = '<p>\u{1F3B2} 2d6+3 \u21D2 [4, 5] +3 = 12</p>';
+    const plain = render(
+      <MemoryRouter>
+        <TopicRow post={post({ content: dice })} expanded />
+      </MemoryRouter>,
+    );
+    expect(plain.container.querySelector('.tt-dice')).toBeNull();
+    plain.unmount();
+
+    const styled = render(
+      <MemoryRouter>
+        <TopicRow post={post({ content: dice })} expanded enhanceTabletop />
+      </MemoryRouter>,
+    );
+    expect(styled.container.querySelector('.tt-dice')).not.toBeNull();
+  });
   it('uses spoilerText as the title when set', () => {
     render(
       <MemoryRouter>
