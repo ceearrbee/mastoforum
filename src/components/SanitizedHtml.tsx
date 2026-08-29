@@ -10,6 +10,8 @@ interface CustomEmoji {
 interface Props {
   html: string;
   className?: string;
+  /** Optional DOM id, so a collapse toggle can point `aria-controls` at the body. */
+  id?: string;
   emojis?: ReadonlyArray<CustomEmoji>;
   /** Style tabletop blocks (dice, speech, OOC, stat sheets) in this body. */
   enhanceTabletop?: boolean;
@@ -18,6 +20,7 @@ interface Props {
 export default function SanitizedHtml({
   html,
   className,
+  id,
   emojis = [],
   enhanceTabletop = false,
 }: Props) {
@@ -28,5 +31,5 @@ export default function SanitizedHtml({
   // `safe` is run through DOMPurify (see sanitizeStatusHtml); the markup is
   // already sanitized, so this dangerouslySetInnerHTML is the intended sink.
   // eslint-disable-next-line security/dangerously-set-innerhtml
-  return <div className={className} dangerouslySetInnerHTML={{ __html: safe }} />;
+  return <div id={id} className={className} dangerouslySetInnerHTML={{ __html: safe }} />;
 }

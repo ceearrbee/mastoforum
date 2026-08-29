@@ -33,6 +33,79 @@
   }
 }
 
+.collapsed {
+  gap: 0.5rem;
+}
+
+/* `display: contents` keeps the body's children in the card's flex column, so
+   the wrapper exists only as an aria-controls target for the toggle. */
+.bodyRegion {
+  display: contents;
+}
+
+.collapseToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-left: -0.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  color: var(--cds-text-secondary);
+}
+
+.collapseToggle:hover {
+  background-color: var(--cds-layer-hover);
+  color: var(--cds-text-primary);
+}
+
+.collapseToggle:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
+}
+
+.collapsedSummary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+}
+
+.collapsedSummary:hover .collapsedText {
+  color: var(--cds-text-primary);
+}
+
+.collapsedSummary:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 2px;
+}
+
+.collapsedText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.collapsedNote {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-style: italic;
+  color: var(--cds-text-helper, var(--cds-text-secondary));
+}
+
 .boostedBy {
   display: inline-flex;
   align-items: center;

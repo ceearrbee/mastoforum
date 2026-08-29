@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { mastodon } from 'masto';
-import { buildFlat, buildOrdered } from './thread';
+import { buildFlat, buildOrdered, collapseSubtrees } from './thread';
 
 function st(id: string, inReplyToId: string | null, createdAt: string): mastodon.v1.Status {
   return { id, inReplyToId, createdAt } as unknown as mastodon.v1.Status;
@@ -83,5 +83,51 @@ describe('buildFlat', () => {
     const out = buildFlat([], main, [orphan]);
     expect(out[1].post.id).toBe('O');
     expect(out[1].quoteOf).toBeUndefined();
+  });
+});
+
+describe('collapseSubtrees', () => {
+  const main = st('M', null, '2025-01-01T00:00:00Z');
+  const descendants = [
+    st('C1', 'M', '2025-01-02T00:00:00Z'),
+    st('GC1', 'C1', '2025-01-02T01:00:00Z'),
+    st('GGC1', 'GC1', '2025-01-02T02:00:00Z'),
+    st('C2', 'M', '2025-01-03T00:00:00Z'),
+  ];
+  const ordered = buildOrdered([], main, descendants);
+
+  it('keeps everything when nothing is collapsed', () => {
+    const out = collapseSubtrees(ordered, () => false);
+    expect(out.map((o) => o.post.id)).toEqual(['M', 'C1', 'GC1', 'GGC1', 'C2']);
+    expect(out.every((o) => o.hiddenReplies === 0)).toBe(true);
+  });
+
+  it('hides the whole subtree under a collapsed post', () => {
+    const out = collapseSubtrees(ordered, (p) => p.id === 'C1');
+    expect(out.map((o) => o.post.id)).toEqual(['M', 'C1', 'C2']);
+    expect(out.find((o) => o.post.id === 'C1')?.hiddenReplies).toBe(2);
+  });
+
+  it('counts a collapsed root\'s entire subtree', () => {
+    const out = collapseSubtrees(ordered, (p) => p.id === 'M');
+    expect(out.map((o) => o.post.id)).toEqual(['M']);
+    expect(out[0].hiddenReplies).toBe(4);
+  });
+
+  it('does not double-count a collapsed post nested inside another', () => {
+    const out = collapseSubtrees(ordered, (p) => p.id === 'C1' || p.id === 'GC1');
+    expect(out.map((o) => o.post.id)).toEqual(['M', 'C1', 'C2']);
+    expect(out.find((o) => o.post.id === 'C1')?.hiddenReplies).toBe(2);
+  });
+
+  it('reports the uncollapsed position so post numbers stay stable', () => {
+    const out = collapseSubtrees(ordered, (p) => p.id === 'C1');
+    expect(out.map((o) => o.index)).toEqual([0, 1, 4]);
+  });
+
+  it('collapsing a leaf hides nothing', () => {
+    const out = collapseSubtrees(ordered, (p) => p.id === 'C2');
+    expect(out.map((o) => o.post.id)).toEqual(['M', 'C1', 'GC1', 'GGC1', 'C2']);
+    expect(out.at(-1)?.hiddenReplies).toBe(0);
   });
 });

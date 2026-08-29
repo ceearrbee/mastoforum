@@ -9,6 +9,8 @@ interface Props {
 const SHORTCUTS: { keys: string; description: string }[] = [
   { keys: 'j', description: 'Next post' },
   { keys: 'k', description: 'Previous post' },
+  { keys: 'c', description: 'Collapse or expand the focused post' },
+  { keys: 'C', description: 'Collapse or expand every post' },
   { keys: 'r', description: 'Reply to the topic' },
   { keys: '/', description: 'Focus the search box' },
   { keys: '?', description: 'Show this help' },

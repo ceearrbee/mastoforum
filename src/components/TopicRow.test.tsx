@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { mastodon } from 'masto';
 import TopicRow from './TopicRow';
@@ -26,6 +26,36 @@ function post(overrides: Partial<mastodon.v1.Status> = {}): mastodon.v1.Status {
 }
 
 describe('TopicRow', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('collapses a single expanded row without touching the list default', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow post={post({ content: '<p>The whole body.</p>' })} expanded />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.post-content')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /collapse post/i }));
+    expect(container.querySelector('.post-content')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /expand post/i }));
+    expect(container.querySelector('.post-content')).not.toBeNull();
+  });
+
+  it('expands a single collapsed row without touching the list default', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow post={post({ content: '<p>The whole body.</p>' })} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.post-content')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /expand post/i }));
+    expect(container.querySelector('.post-content')).toHaveTextContent('The whole body.');
+  });
 
   it('shows only the title preview by default', () => {
     const { container } = render(

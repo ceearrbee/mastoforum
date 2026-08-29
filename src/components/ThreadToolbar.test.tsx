@@ -10,11 +10,27 @@ function renderToolbar(overrides: Partial<Parameters<typeof ThreadToolbar>[0]> =
     onJumpToReply: vi.fn(),
     unreadCount: 3,
     onMarkRead: vi.fn(),
+    allCollapsed: false,
+    onToggleCollapseAll: vi.fn(),
     ...overrides,
   };
   render(<ThreadToolbar {...props} />);
   return props;
 }
+
+describe('ThreadToolbar collapse-all control', () => {
+  it('offers "Collapse all" while any post is expanded', () => {
+    const { onToggleCollapseAll } = renderToolbar({ allCollapsed: false });
+    fireEvent.click(screen.getByRole('button', { name: /collapse all/i }));
+    expect(onToggleCollapseAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers "Expand all" once everything is collapsed', () => {
+    const { onToggleCollapseAll } = renderToolbar({ allCollapsed: true });
+    fireEvent.click(screen.getByRole('button', { name: /expand all/i }));
+    expect(onToggleCollapseAll).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('ThreadToolbar mark-read control', () => {
   it('shows an enabled "Mark read" button when there are unread replies', () => {

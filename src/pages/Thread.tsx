@@ -21,7 +21,20 @@ import ShortcutsHelpModal from '../components/ShortcutsHelpModal';
 import ThreadToolbar from '../components/ThreadToolbar';
 import { errorMessage } from '../utils/apiErrors';
 import { displayStatus, statusTitle } from '../utils/status';
-import { buildFlat, buildOrdered, type FlatPost, type OrderedPost } from '../utils/thread';
+import {
+  buildFlat,
+  buildOrdered,
+  collapseSubtrees,
+  type FlatPost,
+  type OrderedPost,
+  type VisibleOrderedPost,
+} from '../utils/thread';
+import {
+  isPostCollapsed,
+  setManyPostCollapse,
+  togglePostCollapse,
+  useCollapseMap,
+} from '../utils/collapsedPosts';
 import { recordRecentThread } from '../utils/recentThreads';
 import {
   getThreadSeen,
@@ -90,6 +103,15 @@ export default function Thread() {
         ? buildOrdered(threadData.ancestors, threadData.mainPost, threadData.descendants)
         : [],
     [threadData],
+  );
+
+  const collapseMap = useCollapseMap();
+
+  // Tree view folds a collapsed post's whole subtree away; flat view keeps its
+  // chronological order, so only the collapsed post itself shrinks there.
+  const visibleTree: VisibleOrderedPost[] = useMemo(
+    () => collapseSubtrees(tree, (p) => isPostCollapsed(collapseMap, p.id, false)),
+    [tree, collapseMap],
   );
 
   const byId = useMemo(() => {
@@ -174,13 +196,43 @@ export default function Thread() {
 
   const visiblePosts = useMemo<mastodon.v1.Status[]>(() => {
     const view = settings.threadView;
-    return view === 'flat' ? flat.map((f) => f.post) : tree.map((o) => o.post);
-  }, [flat, tree, settings.threadView]);
+    return view === 'flat' ? flat.map((f) => f.post) : visibleTree.map((o) => o.post);
+  }, [flat, visibleTree, settings.threadView]);
 
   const visiblePostIds = useMemo(
     () => visiblePosts.map((p) => displayStatus(p).id),
     [visiblePosts],
   );
+
+  // Collapse state is keyed by the wrapper status id (what PostCard toggles),
+  // while the element registry is keyed by the displayed id; keep both.
+  const collapseIdByDisplayId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of visiblePosts) map.set(displayStatus(p).id, p.id);
+    return map;
+  }, [visiblePosts]);
+
+  const allCollapsed =
+    visiblePosts.length > 0 &&
+    visiblePosts.every((p) => isPostCollapsed(collapseMap, p.id, false));
+
+  const toggleCollapseAll = useCallback(() => {
+    // Collapse-all only needs the roots in tree view — their subtrees fold with
+    // them — but writing every id keeps flat and tree view in agreement.
+    const ids = (settings.threadView === 'flat' ? flat.map((f) => f.post) : tree.map((o) => o.post))
+      .map((p) => p.id);
+    setManyPostCollapse(ids, allCollapsed ? 'expanded' : 'collapsed');
+  }, [allCollapsed, flat, tree, settings.threadView]);
+
+  /** The post whose card currently holds focus, for the collapse shortcut. */
+  const focusedPostId = useCallback((): string | undefined => {
+    const active = document.activeElement;
+    for (const displayId of visiblePostIds) {
+      const el = postEls.current.get(displayId);
+      if (el && (el === active || el.contains(active))) return collapseIdByDisplayId.get(displayId);
+    }
+    return undefined;
+  }, [visiblePostIds, collapseIdByDisplayId]);
 
   const focusPost = (delta: number) => {
     const ids = visiblePostIds;
@@ -211,6 +263,16 @@ export default function Thread() {
   useKeyboardShortcuts({
     j: () => focusPost(1),
     k: () => focusPost(-1),
+    c: (e) => {
+      const postId = focusedPostId();
+      if (!postId) return;
+      e.preventDefault();
+      togglePostCollapse(postId, false);
+    },
+    C: (e) => {
+      e.preventDefault();
+      toggleCollapseAll();
+    },
     r: (e) => {
       e.preventDefault();
       const root = visiblePosts[0];
@@ -282,6 +344,8 @@ export default function Thread() {
           onJumpToReply={scrollToComposer}
           unreadCount={unreadCount}
           onMarkRead={markAllRead}
+          allCollapsed={allCollapsed}
+          onToggleCollapseAll={toggleCollapseAll}
         />
       )}
 
@@ -330,8 +394,8 @@ export default function Thread() {
                   </ErrorBoundary>
                 );
               })
-            : tree.map(({ post, depth }, index, arr) => {
-                const prev = index > 0 ? arr[index - 1].post : null;
+            : visibleTree.map(({ post, depth, hiddenReplies, index }, position, arr) => {
+                const prev = position > 0 ? arr[position - 1].post : null;
                 const quoteOf =
                   post.inReplyToId && (!prev || prev.id !== post.inReplyToId)
                     ? byId.get(post.inReplyToId)
@@ -346,6 +410,7 @@ export default function Thread() {
                       post={post}
                       index={index}
                       depth={depth}
+                      hiddenReplies={hiddenReplies}
                       quoteOf={quoteOf}
                       ownAccountId={currentUser?.id}
                       onAction={handleAction}

@@ -4,6 +4,8 @@ import {
   Bookmark,
   BookmarkFilled,
   ChatLaunch,
+  ChevronDown,
+  ChevronRight,
   DataShare,
   Favorite,
   FavoriteFilled,
@@ -20,7 +22,8 @@ import QuoteContext from './QuoteContext';
 import SanitizedHtml from './SanitizedHtml';
 import VisuallyHidden from './VisuallyHidden';
 import { useSettings } from '../context/SettingsContext';
-import { boosterOf, displayNameOf, displayStatus } from '../utils/status';
+import { isPostCollapsed, togglePostCollapse, useCollapseMap } from '../utils/collapsedPosts';
+import { boosterOf, displayNameOf, displayStatus, previewText } from '../utils/status';
 import styles from './PostCard.module.css';
 
 export type StatusAction =
@@ -47,7 +50,14 @@ interface Props {
   tabIndex?: number;
   /** Briefly highlights the card (e.g. the first unread reply). */
   highlighted?: boolean;
+  /** Render collapsed unless the reader has an override for this post. */
+  defaultCollapsed?: boolean;
+  /** Replies folded away under this post (tree view), noted while collapsed. */
+  hiddenReplies?: number;
 }
+
+/** Length of the one-line teaser shown in place of a collapsed post's body. */
+const COLLAPSED_PREVIEW_CHARS = 140;
 
 function clampDepth(depth: number): number {
   if (depth <= 0) return 0;
@@ -71,12 +81,17 @@ export default function PostCard({
   ref,
   tabIndex,
   highlighted,
+  defaultCollapsed = false,
+  hiddenReplies = 0,
 }: Props) {
   const { settings } = useSettings();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const collapseMap = useCollapseMap();
   const indent = clampDepth(depth);
+  const collapsed = isPostCollapsed(collapseMap, post.id, defaultCollapsed);
   const className = [
     styles.card,
+    collapsed ? styles.collapsed : null,
     indent > 0 ? styles[`indent-${indent}`] : null,
     highlighted ? styles.unreadHighlight : null,
   ]
@@ -88,6 +103,16 @@ export default function PostCard({
   const display = displayStatus(post);
   const isOwn = !!ownAccountId && display.account.id === ownAccountId;
   const edited = display.editedAt && display.editedAt !== display.createdAt;
+  // Tell the reader what they're hiding, so a collapsed post isn't a black box.
+  const hiddenNote = [
+    display.mediaAttachments.length > 0
+      ? `${display.mediaAttachments.length} attachment${display.mediaAttachments.length > 1 ? 's' : ''}`
+      : null,
+    display.poll ? 'poll' : null,
+    hiddenReplies > 0 ? `${hiddenReplies} ${hiddenReplies === 1 ? 'reply' : 'replies'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <article id={`post-${display.id}`} className={className} ref={ref} tabIndex={tabIndex}>
@@ -103,6 +128,17 @@ export default function PostCard({
         </AccountInfoPopover>
       )}
       <header className={styles.header}>
+        <button
+          type="button"
+          className={styles.collapseToggle}
+          aria-expanded={!collapsed}
+          aria-controls={`post-body-${display.id}`}
+          title={collapsed ? 'Expand post' : 'Collapse post'}
+          onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+          <VisuallyHidden>{collapsed ? 'Expand post' : 'Collapse post'}</VisuallyHidden>
+        </button>
         <AccountInfoPopover account={display.account}>
           <AvatarChip account={display.account} size="md" />
           <span className={styles.identity}>
@@ -150,77 +186,94 @@ export default function PostCard({
         </div>
       </header>
 
-      {quoteOf && <QuoteContext post={quoteOf} />}
-
-      {display.spoilerText ? (
-        <details className={styles.spoiler}>
-          <summary>{display.spoilerText}</summary>
-          <SanitizedHtml
-            className={`${styles.body} post-content`}
-            html={display.content}
-            emojis={display.emojis}
-            enhanceTabletop={settings.tabletopTools}
-          />
-        </details>
+      {collapsed ? (
+        <button
+          type="button"
+          className={styles.collapsedSummary}
+          id={`post-body-${display.id}`}
+          onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+          title="Expand post"
+        >
+          <span className={styles.collapsedText}>
+            {display.spoilerText || previewText(display, COLLAPSED_PREVIEW_CHARS) || 'Empty post'}
+          </span>
+          {hiddenNote && <span className={styles.collapsedNote}>{hiddenNote}</span>}
+        </button>
       ) : (
-        <SanitizedHtml
-          className={`${styles.body} post-content`}
-          html={display.content}
-          emojis={display.emojis}
-          enhanceTabletop={settings.tabletopTools}
-        />
+        <div className={styles.bodyRegion} id={`post-body-${display.id}`}>
+          {quoteOf && <QuoteContext post={quoteOf} />}
+
+          {display.spoilerText ? (
+            <details className={styles.spoiler}>
+              <summary>{display.spoilerText}</summary>
+              <SanitizedHtml
+                className={`${styles.body} post-content`}
+                html={display.content}
+                emojis={display.emojis}
+                enhanceTabletop={settings.tabletopTools}
+              />
+            </details>
+          ) : (
+            <SanitizedHtml
+              className={`${styles.body} post-content`}
+              html={display.content}
+              emojis={display.emojis}
+              enhanceTabletop={settings.tabletopTools}
+            />
+          )}
+
+          {display.poll && <PollRenderer poll={display.poll} statusId={display.id} />}
+
+          {display.mediaAttachments.length > 0 && <MediaList media={display.mediaAttachments} />}
+
+          <div className={styles.actions}>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={display.favourited ? FavoriteFilled : Favorite}
+              onClick={() => onAction(display.id, display.favourited ? 'unfavourite' : 'favourite')}
+              className={display.favourited ? styles['actionActive--favourite'] : undefined}
+              aria-pressed={!!display.favourited}
+            >
+              {display.favouritesCount || 'Like'}
+              {display.favourited && <VisuallyHidden>(liked)</VisuallyHidden>}
+            </Button>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={DataShare}
+              onClick={() => onAction(display.id, display.reblogged ? 'unreblog' : 'reblog')}
+              className={display.reblogged ? styles['actionActive--reblog'] : undefined}
+              aria-pressed={!!display.reblogged}
+            >
+              {display.reblogsCount || 'Boost'}
+              {display.reblogged && <VisuallyHidden>(boosted)</VisuallyHidden>}
+            </Button>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={display.bookmarked ? BookmarkFilled : Bookmark}
+              onClick={() => onAction(display.id, display.bookmarked ? 'unbookmark' : 'bookmark')}
+              className={display.bookmarked ? styles['actionActive--bookmark'] : undefined}
+              aria-pressed={!!display.bookmarked}
+            >
+              Save
+              {display.bookmarked && <VisuallyHidden>(saved)</VisuallyHidden>}
+            </Button>
+            <span className={styles.spacer} />
+            {onReplyClick && (
+              <Button
+                kind="ghost"
+                size="sm"
+                renderIcon={ChatLaunch}
+                onClick={() => onReplyClick(display)}
+              >
+                Reply
+              </Button>
+            )}
+          </div>
+        </div>
       )}
-
-      {display.poll && <PollRenderer poll={display.poll} statusId={display.id} />}
-
-      {display.mediaAttachments.length > 0 && <MediaList media={display.mediaAttachments} />}
-
-      <div className={styles.actions}>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={display.favourited ? FavoriteFilled : Favorite}
-          onClick={() => onAction(display.id, display.favourited ? 'unfavourite' : 'favourite')}
-          className={display.favourited ? styles['actionActive--favourite'] : undefined}
-          aria-pressed={!!display.favourited}
-        >
-          {display.favouritesCount || 'Like'}
-          {display.favourited && <VisuallyHidden>(liked)</VisuallyHidden>}
-        </Button>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={DataShare}
-          onClick={() => onAction(display.id, display.reblogged ? 'unreblog' : 'reblog')}
-          className={display.reblogged ? styles['actionActive--reblog'] : undefined}
-          aria-pressed={!!display.reblogged}
-        >
-          {display.reblogsCount || 'Boost'}
-          {display.reblogged && <VisuallyHidden>(boosted)</VisuallyHidden>}
-        </Button>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={display.bookmarked ? BookmarkFilled : Bookmark}
-          onClick={() => onAction(display.id, display.bookmarked ? 'unbookmark' : 'bookmark')}
-          className={display.bookmarked ? styles['actionActive--bookmark'] : undefined}
-          aria-pressed={!!display.bookmarked}
-        >
-          Save
-          {display.bookmarked && <VisuallyHidden>(saved)</VisuallyHidden>}
-        </Button>
-        <span className={styles.spacer} />
-        {onReplyClick && (
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={ChatLaunch}
-            onClick={() => onReplyClick(display)}
-          >
-            Reply
-          </Button>
-        )}
-      </div>
 
       {edited && (
         <EditHistoryModal

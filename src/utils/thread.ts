@@ -39,6 +39,49 @@ export function buildOrdered(
   return ordered;
 }
 
+/** An {@link OrderedPost} that survived subtree collapsing. */
+export interface VisibleOrderedPost extends OrderedPost {
+  /** Replies hidden underneath this post because it is collapsed. */
+  hiddenReplies: number;
+  /** Position in the uncollapsed tree, so post numbers don't shift on collapse. */
+  index: number;
+}
+
+/**
+ * Drop the descendants of every collapsed post from an ordered (tree) thread.
+ *
+ * `ordered` is a depth-first walk, so a post's subtree is exactly the run of
+ * following entries deeper than it — no parent map needed. The hidden count is
+ * reported on the collapsed post so the UI can say what it is folding away.
+ */
+export function collapseSubtrees(
+  ordered: OrderedPost[],
+  isCollapsed: (post: mastodon.v1.Status) => boolean,
+): VisibleOrderedPost[] {
+  const visible: VisibleOrderedPost[] = [];
+  // Depth of the shallowest collapsed post we are currently inside, if any.
+  let hiddenBelow: number | null = null;
+  let hiddenInto: VisibleOrderedPost | null = null;
+
+  for (const [index, entry] of ordered.entries()) {
+    if (hiddenBelow !== null) {
+      if (entry.depth > hiddenBelow) {
+        if (hiddenInto) hiddenInto.hiddenReplies += 1;
+        continue;
+      }
+      hiddenBelow = null;
+      hiddenInto = null;
+    }
+    const next: VisibleOrderedPost = { ...entry, hiddenReplies: 0, index };
+    visible.push(next);
+    if (isCollapsed(entry.post)) {
+      hiddenBelow = entry.depth;
+      hiddenInto = next;
+    }
+  }
+  return visible;
+}
+
 export interface FlatPost {
   post: mastodon.v1.Status;
   /** Set when this post replies to a non-adjacent post; UI shows a quote of it. */

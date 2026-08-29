@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronRight } from '@carbon/icons-react';
 import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
 import EmojiText from './EmojiText';
 import SanitizedHtml from './SanitizedHtml';
 import TagPill from './TagPill';
+import VisuallyHidden from './VisuallyHidden';
+import { isPostCollapsed, togglePostCollapse, useCollapseMap } from '../utils/collapsedPosts';
 import { useThreadReadMap } from '../utils/readState';
 import { boosterOf, displayNameOf, displayStatus, statusTitle } from '../utils/status';
 import { relativeTime } from '../utils/time';
@@ -34,6 +37,11 @@ export default function TopicRow({
   const title = statusTitle(display);
   const tags = display.tags.filter((t) => !hideTag || t.name.toLowerCase() !== hideTag.toLowerCase());
   const readMap = useThreadReadMap();
+  // The `expanded` prop is only the default; a per-post override wins, so any
+  // single row can be collapsed (or opened) without changing the whole list.
+  const collapseMap = useCollapseMap();
+  const collapsed = isPostCollapsed(collapseMap, post.id, !expanded);
+  const showBody = !collapsed && !!display.content;
   const seen = readMap[display.id];
   const newReplies = seen ? Math.max(0, display.repliesCount - seen.seenReplies) : 0;
   const Heading = `h${headingLevel}` as const;
@@ -63,9 +71,23 @@ export default function TopicRow({
           <span>@{display.account.acct}</span>
           <span aria-hidden="true">·</span>
           <time dateTime={display.createdAt}>{relativeTime(display.createdAt)}</time>
+          {display.content && (
+            <button
+              type="button"
+              className={styles.collapseToggle}
+              aria-expanded={showBody}
+              aria-controls={`topic-body-${display.id}`}
+              title={showBody ? 'Collapse post' : 'Expand post'}
+              onClick={() => togglePostCollapse(post.id, !expanded)}
+            >
+              {showBody ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <VisuallyHidden>{showBody ? 'Collapse post' : 'Expand post'}</VisuallyHidden>
+            </button>
+          )}
         </p>
-        {expanded && display.content && (
+        {showBody && (
           <SanitizedHtml
+            id={`topic-body-${display.id}`}
             className={`${styles.expandedBody} post-content`}
             html={display.content}
             emojis={display.emojis}
