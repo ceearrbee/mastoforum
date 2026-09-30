@@ -63,6 +63,29 @@ describe('accessibility (axe)', () => {
     await expectNoA11yViolations(baseElement);
   });
 
+  it('TopicRow expanded with media has no violations', async () => {
+    const postWithMedia = {
+      ...post,
+      mediaAttachments: [
+        {
+          id: 'm1',
+          type: 'image',
+          previewUrl: 'https://example.com/p.jpg',
+          url: 'https://example.com/f.jpg',
+          description: 'Accessible photo description',
+        },
+      ],
+    } as unknown as mastodon.v1.Status;
+    const { baseElement } = render(
+      <MemoryRouter>
+        <main>
+          <TopicRow post={postWithMedia} expanded />
+        </main>
+      </MemoryRouter>,
+    );
+    await expectNoA11yViolations(baseElement);
+  });
+
   it('LinkCard has no violations', async () => {
     const { baseElement } = render(
       <main>

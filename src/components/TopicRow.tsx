@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from '@carbon/icons-react';
 import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
 import EmojiText from './EmojiText';
+import MediaList from './MediaList';
 import SanitizedHtml from './SanitizedHtml';
 import TagPill from './TagPill';
 import VisuallyHidden from './VisuallyHidden';
@@ -41,7 +42,10 @@ export default function TopicRow({
   // single row can be collapsed (or opened) without changing the whole list.
   const collapseMap = useCollapseMap();
   const collapsed = isPostCollapsed(collapseMap, post.id, !expanded);
-  const showBody = !collapsed && !!display.content;
+  const hasContent = Boolean(display.content);
+  const hasMedia = Boolean(display.mediaAttachments && display.mediaAttachments.length > 0);
+  const hasExpandable = hasContent || hasMedia;
+  const showBody = !collapsed && hasExpandable;
   const seen = readMap[display.id];
   const newReplies = seen ? Math.max(0, display.repliesCount - seen.seenReplies) : 0;
   const Heading = `h${headingLevel}` as const;
@@ -71,7 +75,7 @@ export default function TopicRow({
           <span>@{display.account.acct}</span>
           <span aria-hidden="true">·</span>
           <time dateTime={display.createdAt}>{relativeTime(display.createdAt)}</time>
-          {display.content && (
+          {hasExpandable && (
             <button
               type="button"
               className={styles.collapseToggle}
@@ -86,13 +90,21 @@ export default function TopicRow({
           )}
         </p>
         {showBody && (
-          <SanitizedHtml
-            id={`topic-body-${display.id}`}
-            className={`${styles.expandedBody} post-content`}
-            html={display.content}
-            emojis={display.emojis}
-            enhanceTabletop={enhanceTabletop}
-          />
+          <div id={`topic-body-${display.id}`} className={styles.expandedContent}>
+            {hasContent && (
+              <SanitizedHtml
+                className={`${styles.expandedBody} post-content`}
+                html={display.content}
+                emojis={display.emojis}
+                enhanceTabletop={enhanceTabletop}
+              />
+            )}
+            {hasMedia && (
+              <div className={styles.media}>
+                <MediaList media={display.mediaAttachments} />
+              </div>
+            )}
+          </div>
         )}
         {tags.length > 0 && (
           <div className={styles.tags}>

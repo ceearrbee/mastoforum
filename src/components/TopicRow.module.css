@@ -153,12 +153,22 @@
 }
 
 /* The card-wide ::after overlay sits above the body, so lift the expanded
-   content back over it or its links become unclickable. */
-.expandedBody {
+   content container back over it or its links become unclickable. */
+.expandedContent {
   position: relative;
   z-index: 1;
   margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.expandedBody {
   font-size: 0.875rem;
   color: var(--cds-text-secondary);
   overflow-wrap: anywhere;
+}
+
+.media {
+  min-width: 0;
 }

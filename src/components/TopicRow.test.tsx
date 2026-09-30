@@ -148,4 +148,81 @@ describe('TopicRow', () => {
     // First link is the title link, which carries the thread href.
     expect(links[0].getAttribute('href')).toBe('/thread/has%2Fslash');
   });
+
+  it('renders images when expanded', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow
+          post={post({
+            content: '<p>A post with a photo.</p>',
+            mediaAttachments: [
+              {
+                id: 'm1',
+                type: 'image',
+                previewUrl: 'https://img.example/preview.jpg',
+                url: 'https://img.example/full.jpg',
+                description: 'A beautiful sunset',
+              } as mastodon.v1.MediaAttachment,
+            ],
+          })}
+          expanded
+        />
+      </MemoryRouter>,
+    );
+    const img = screen.getByRole('img', { name: 'A beautiful sunset' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://img.example/preview.jpg');
+    expect(screen.getByText('A beautiful sunset')).toBeInTheDocument();
+    expect(container.querySelector('.post-content')).toHaveTextContent('A post with a photo.');
+  });
+
+  it('does not render images when collapsed', () => {
+    render(
+      <MemoryRouter>
+        <TopicRow
+          post={post({
+            content: '<p>A post with a photo.</p>',
+            mediaAttachments: [
+              {
+                id: 'm1',
+                type: 'image',
+                previewUrl: 'https://img.example/preview.jpg',
+                url: 'https://img.example/full.jpg',
+                description: 'A beautiful sunset',
+              } as mastodon.v1.MediaAttachment,
+            ],
+          })}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('img', { name: 'A beautiful sunset' })).toBeNull();
+  });
+
+  it('allows expanding an image-only post and renders its images', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow
+          post={post({
+            content: '',
+            mediaAttachments: [
+              {
+                id: 'm1',
+                type: 'image',
+                previewUrl: 'https://img.example/photo.png',
+                url: 'https://img.example/photo.png',
+                description: 'Photo only',
+              } as mastodon.v1.MediaAttachment,
+            ],
+          })}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('img', { name: 'Photo only' })).toBeNull();
+    const toggle = screen.getByRole('button', { name: /expand post/i });
+    fireEvent.click(toggle);
+
+    const img = screen.getByRole('img', { name: 'Photo only' });
+    expect(img).toBeInTheDocument();
+    expect(container.querySelector('.post-content')).toBeNull();
+  });
 });
