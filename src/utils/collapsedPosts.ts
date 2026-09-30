@@ -100,7 +100,7 @@ export function isPostCollapsed(
   return override ? override === 'collapsed' : defaultCollapsed;
 }
 
-/** Drop every override (used by "expand all" style controls). */
+/** Drop every per-post collapse override. */
 export function clearPostCollapse(): void {
   writeAll({});
 }

@@ -9,6 +9,7 @@ import NotFound from '../pages/NotFound';
 import TopicRow from '../components/TopicRow';
 import LinkCard from '../components/LinkCard';
 import CharCounter from '../components/CharCounter';
+import MediaList from '../components/MediaList';
 import ShortcutsHelpModal from '../components/ShortcutsHelpModal';
 
 afterEach(cleanup);
@@ -106,6 +107,24 @@ describe('accessibility (axe)', () => {
 
   it('ShortcutsHelpModal has no violations', async () => {
     const { baseElement } = render(<ShortcutsHelpModal open onClose={() => {}} />);
+    await expectNoA11yViolations(baseElement);
+  });
+
+  it('MediaList has no violations', async () => {
+    const media = [
+      {
+        id: 'm1',
+        type: 'image',
+        previewUrl: 'https://example.com/p.jpg',
+        url: 'https://example.com/f.jpg',
+        description: 'Accessible photo description',
+      },
+    ] as unknown as mastodon.v1.MediaAttachment[];
+    const { baseElement } = render(
+      <main>
+        <MediaList media={media} />
+      </main>,
+    );
     await expectNoA11yViolations(baseElement);
   });
 });

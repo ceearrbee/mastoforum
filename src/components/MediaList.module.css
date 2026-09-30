@@ -11,6 +11,25 @@
   overflow: hidden;
 }
 
+.imageButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: zoom-in;
+  text-align: left;
+}
+
+.imageButton:hover img {
+  opacity: 0.9;
+}
+
+.imageButton:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
+}
+
 .image img,
 .video video {
   display: block;
@@ -42,4 +61,65 @@
   color: var(--cds-text-secondary);
   padding: 0.5rem 0.75rem;
   border-top: 1px solid var(--cds-border-subtle);
+}
+
+.lightbox {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lightboxImageWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  max-height: 65vh;
+}
+
+.lightboxImage {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+.lightboxAlt {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.lightboxActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.counter {
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary);
+}
+
+.originalLink {
+  font-size: 0.875rem;
+  color: var(--cds-link-primary);
+  text-decoration: none;
+}
+
+.originalLink:hover {
+  text-decoration: underline;
 }
