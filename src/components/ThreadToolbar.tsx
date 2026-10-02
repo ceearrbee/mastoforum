@@ -1,6 +1,5 @@
-// The view toggle is a segmented control: a role="group" of aria-pressed buttons.
 import { Button } from '@carbon/react';
-import { Checkmark, ChevronDown, CollapseAll, ExpandAll } from '@carbon/icons-react';
+import { Checkmark, ChevronDown, CollapseAll, ExpandAll, Renew } from '@carbon/icons-react';
 import type { ThreadView } from '../context/SettingsContext';
 import styles from './ThreadToolbar.module.css';
 
@@ -14,6 +13,8 @@ interface Props {
   /** True when every post in view is collapsed, so the button offers "Expand all". */
   allCollapsed: boolean;
   onToggleCollapseAll: () => void;
+  onSyncRemote?: () => void;
+  isSyncingRemote?: boolean;
 }
 
 export default function ThreadToolbar({
@@ -25,6 +26,8 @@ export default function ThreadToolbar({
   onMarkRead,
   allCollapsed,
   onToggleCollapseAll,
+  onSyncRemote,
+  isSyncingRemote,
 }: Props) {
   return (
     <div className={styles.toolbar} role="toolbar" aria-label="Thread view controls">
@@ -68,6 +71,18 @@ export default function ThreadToolbar({
         >
           {unreadCount === 0 ? 'All read' : 'Mark read'}
         </Button>
+        {onSyncRemote && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Renew}
+            disabled={isSyncingRemote}
+            onClick={onSyncRemote}
+            title="Fetch missing federated replies from origin server"
+          >
+            {isSyncingRemote ? 'Syncing…' : 'Sync'}
+          </Button>
+        )}
         <Button kind="ghost" size="sm" renderIcon={ChevronDown} onClick={onJumpToReply}>
           Reply
         </Button>

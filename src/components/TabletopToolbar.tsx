@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button, TextInput } from '@carbon/react';
-import { Catalog, Chat, Cube, Idea } from '@carbon/icons-react';
+import { Catalog, Chat, Cube, Idea, Locked } from '@carbon/icons-react';
 import type { Editor } from 'codemirror';
 import { PillGroup } from './SortPills';
 import {
@@ -8,6 +8,7 @@ import {
   formatOoc,
   formatSheet,
   formatSpeech,
+  formatWhisper,
   type Ability,
   type CharacterSheet,
 } from '../utils/ttrpg/format';
@@ -24,7 +25,7 @@ const MODES: { key: WritingMode; label: string }[] = [
 
 const QUICK_ROLLS = ['d20', 'adv d20', 'dis d20', '2d6', '4d6kh3', '1d8+3'];
 
-type Tool = 'dice' | 'speech' | 'ooc' | 'sheet';
+type Tool = 'dice' | 'speech' | 'ooc' | 'sheet' | 'whisper';
 
 const emptySheet: CharacterSheet = {
   name: '',
@@ -41,6 +42,7 @@ interface Props {
   cm: Editor | null;
   mode: WritingMode;
   onModeChange: (mode: WritingMode) => void;
+  onSetSpoilerText?: (text: string) => void;
 }
 
 /**
@@ -48,12 +50,19 @@ interface Props {
  * writes is ordinary text that reads correctly in any client — the styling
  * MastoForum adds on render is a bonus, never the meaning.
  */
-export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
+export default function TabletopToolbar({
+  cm,
+  mode,
+  onModeChange,
+  onSetSpoilerText,
+}: Props) {
   const [tool, setTool] = useState<Tool | null>(null);
   const [notation, setNotation] = useState('d20');
   const [speaker, setSpeaker] = useState('');
   const [line, setLine] = useState('');
   const [ooc, setOoc] = useState('');
+  const [whisperTo, setWhisperTo] = useState('GM');
+  const [whisperMsg, setWhisperMsg] = useState('');
   const [sheet, setSheet] = useState<CharacterSheet>(emptySheet);
   const [speakers, setSpeakers] = useState<string[]>(() => getSpeakers());
 
@@ -90,6 +99,13 @@ export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
     if (!text) return;
     insert(text);
     setOoc('');
+  };
+
+  const insertWhisper = () => {
+    const text = formatWhisper(whisperTo, whisperMsg);
+    if (!text) return;
+    insert(text);
+    setWhisperMsg('');
   };
 
   const insertSheet = () => {
@@ -148,6 +164,15 @@ export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
             onClick={() => toggleTool('sheet')}
           >
             Sheet
+          </Button>
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Locked}
+            aria-pressed={tool === 'whisper'}
+            onClick={() => toggleTool('whisper')}
+          >
+            Whisper
           </Button>
         </div>
       )}
@@ -227,6 +252,17 @@ export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
             <Button size="sm" disabled={!formatSpeech(speaker, line) || !cm} onClick={insertSpeech}>
               Insert
             </Button>
+            {onSetSpoilerText && (
+              <Button
+                kind="ghost"
+                size="sm"
+                disabled={!speaker.trim()}
+                onClick={() => onSetSpoilerText(`[${speaker.trim()}]`)}
+                title="Put character persona in Content Warning / Subject line"
+              >
+                Set Character CW
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -243,6 +279,39 @@ export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
           <p className={styles.preview}>{formatOoc(ooc) || '((ooc: …))'}</p>
           <div className={styles.actions}>
             <Button size="sm" disabled={!formatOoc(ooc) || !cm} onClick={insertOoc}>
+              Insert
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'table' && tool === 'whisper' && (
+        <div className={styles.panel}>
+          <div className={styles.row}>
+            <TextInput
+              id="tt-whisper-to"
+              labelText="Whisper to (e.g. GM, @handle, character)"
+              placeholder="GM"
+              value={whisperTo}
+              onChange={(e) => setWhisperTo(e.target.value)}
+            />
+            <TextInput
+              id="tt-whisper-msg"
+              labelText="Secret message"
+              placeholder="I search the door for traps."
+              value={whisperMsg}
+              onChange={(e) => setWhisperMsg(e.target.value)}
+            />
+          </div>
+          <p className={styles.preview}>
+            {formatWhisper(whisperTo, whisperMsg) || '((whisper to GM: …))'}
+          </p>
+          <div className={styles.actions}>
+            <Button
+              size="sm"
+              disabled={!formatWhisper(whisperTo, whisperMsg) || !cm}
+              onClick={insertWhisper}
+            >
               Insert
             </Button>
           </div>
@@ -317,6 +386,17 @@ export default function TabletopToolbar({ cm, mode, onModeChange }: Props) {
             <Button size="sm" disabled={!sheetText || !cm} onClick={insertSheet}>
               Insert
             </Button>
+            {onSetSpoilerText && (
+              <Button
+                kind="ghost"
+                size="sm"
+                disabled={!sheet.name.trim()}
+                onClick={() => onSetSpoilerText(`[${sheet.name.trim()}]`)}
+                title="Put character persona in Content Warning / Subject line"
+              >
+                Set Character CW
+              </Button>
+            )}
           </div>
         </div>
       )}

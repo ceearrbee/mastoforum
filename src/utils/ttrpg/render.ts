@@ -13,12 +13,22 @@ const LINE_BREAK = 'BR';
 /** Elements that hold a run of `<br>`-separated lines. */
 const LINE_CONTAINERS = 'p, blockquote, li';
 /** Wrappers we've already made — never reprocess their contents. */
-const WRAPPED = 'span.tt-dice, span.tt-speech, span.tt-ooc, span.tt-sheet';
+const WRAPPED = 'span.tt-dice, span.tt-speech, span.tt-ooc, span.tt-whisper, span.tt-sheet';
 
 const DICE = /^\s*🎲\s+\S.*=\s*-?\d+\s*$/;
 const SPEECH = /^\s*([^\s:][^:\n]{0,31}?)\s*:\s+"([^"]{1,400})"\s*$/;
 const SHEET_HEAD = /^\s*▣\s*\S/;
 const OOC = /\(\(\s*ooc\b[:\s]\s*([^)]{1,400}?)\s*\)\)/gi;
+const WHISPER = /\(\(\s*whisper\b(?:\s+to\s+[^:)]+)?[:\s]\s*([^)]{1,400}?)\s*\)\)/gi;
+
+/** Matches a formatted dice roll line, e.g. `🎲 2d6+3 ⇒ [4, 5] +3 = 12`. */
+const DICE_PATTERN = /🎲\s+\S.*?=\s*-?\d+/;
+
+/** Checks if a text or HTML snippet contains a formatted dice roll. */
+export function hasDiceRoll(content: string): boolean {
+  if (!content) return false;
+  return DICE_PATTERN.test(content);
+}
 
 type LineKind = 'dice' | 'speech' | 'sheet-head' | 'blank' | 'plain';
 
@@ -131,15 +141,15 @@ function enhanceContainer(container: Node): void {
   }
 }
 
-/** Wrap inline `((ooc: …))` asides, splitting the text node around each match. */
-function enhanceOoc(root: ParentNode): void {
+/** Wrap inline double-paren asides, splitting the text node around each match. */
+function enhanceInlinePattern(root: ParentNode, regex: RegExp, className: string): void {
   const walker = document.createTreeWalker(root as Node, NodeFilter.SHOW_TEXT);
   const targets: Text[] = [];
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const text = node as Text;
     if (text.parentElement?.closest(WRAPPED)) continue;
-    OOC.lastIndex = 0;
-    if (OOC.test(text.data)) targets.push(text);
+    regex.lastIndex = 0;
+    if (regex.test(text.data)) targets.push(text);
   }
 
   for (const text of targets) {
@@ -147,12 +157,12 @@ function enhanceOoc(root: ParentNode): void {
     if (!parent) continue;
     const frag = document.createDocumentFragment();
     let cursor = 0;
-    OOC.lastIndex = 0;
-    for (const match of text.data.matchAll(OOC)) {
+    regex.lastIndex = 0;
+    for (const match of text.data.matchAll(regex)) {
       const start = match.index ?? 0;
       if (start > cursor) frag.appendChild(document.createTextNode(text.data.slice(cursor, start)));
       const span = document.createElement('span');
-      span.className = 'tt-ooc';
+      span.className = className;
       span.textContent = match[0];
       frag.appendChild(span);
       cursor = start + match[0].length;
@@ -181,7 +191,8 @@ export function enhanceTabletopHtml(safeHtml: string): string {
     if (containers.length === 0) containers.push(template.content);
     for (const container of containers) enhanceContainer(container);
 
-    enhanceOoc(template.content);
+    enhanceInlinePattern(template.content, OOC, 'tt-ooc');
+    enhanceInlinePattern(template.content, WHISPER, 'tt-whisper');
     return template.innerHTML;
   } catch {
     return safeHtml;

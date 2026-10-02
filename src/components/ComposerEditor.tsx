@@ -19,6 +19,7 @@ interface Props {
   /** Prose/Table choice, lifted when the caller wants to persist it. */
   mode?: WritingMode;
   onModeChange?: (mode: WritingMode) => void;
+  onSetSpoilerText?: (text: string) => void;
 }
 
 /** Markdown editor + `@`/`#` autocomplete; owns the CodeMirror ref so callers pass only value/onChange. */
@@ -28,6 +29,7 @@ export default function ComposerEditor({
   placeholder = 'Write…',
   mode,
   onModeChange,
+  onSetSpoilerText,
 }: Props) {
   const { settings } = useSettings();
   const [cm, setCm] = useState<Editor | null>(null);
@@ -45,6 +47,7 @@ export default function ComposerEditor({
           cm={cm}
           mode={mode ?? localMode}
           onModeChange={onModeChange ?? setLocalMode}
+          onSetSpoilerText={onSetSpoilerText}
         />
       )}
       <Suspense fallback={<InlineLoading description="Loading editor…" />}>

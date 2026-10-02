@@ -50,6 +50,7 @@ vi.mock('../hooks/api', () => ({
     handleAction: vi.fn(),
     muteMutation: { mutate: vi.fn(), isPending: false },
     deleteMutation: { mutate: vi.fn() },
+    syncRemoteMutation: { mutate: vi.fn(), isPending: false },
   }),
 }));
 

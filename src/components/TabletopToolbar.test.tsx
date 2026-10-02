@@ -17,10 +17,17 @@ function fakeEditor() {
   return { cm, inserted };
 }
 
-function renderToolbar(mode: WritingMode = 'table') {
+function renderToolbar(mode: WritingMode = 'table', onSetSpoilerText?: (text: string) => void) {
   const editor = fakeEditor();
   const onModeChange = vi.fn();
-  render(<TabletopToolbar cm={editor.cm} mode={mode} onModeChange={onModeChange} />);
+  render(
+    <TabletopToolbar
+      cm={editor.cm}
+      mode={mode}
+      onModeChange={onModeChange}
+      onSetSpoilerText={onSetSpoilerText}
+    />,
+  );
   return { ...editor, onModeChange };
 }
 
@@ -86,6 +93,15 @@ describe('speech tool', () => {
     expect(inserted[0]).toBe('Grond: "We go left."\n');
     expect(screen.getByRole('button', { name: 'Grond' })).toBeInTheDocument();
   });
+
+  it('calls onSetSpoilerText with character name', () => {
+    const onSetSpoilerText = vi.fn();
+    renderToolbar('table', onSetSpoilerText);
+    openTool(/^speech$/i);
+    fireEvent.change(screen.getByLabelText(/character/i), { target: { value: 'Grond' } });
+    fireEvent.click(screen.getByRole('button', { name: /set character cw/i }));
+    expect(onSetSpoilerText).toHaveBeenCalledWith('[Grond]');
+  });
 });
 
 describe('ooc tool', () => {
@@ -114,5 +130,33 @@ describe('sheet tool', () => {
     fireEvent.change(screen.getByLabelText(/^str$/i), { target: { value: '18' } });
     fireEvent.click(screen.getByRole('button', { name: /^insert$/i }));
     expect(inserted[0]).toBe('▣ Grond\nSTR 18 (+4)\n');
+  });
+
+  it('calls onSetSpoilerText with sheet name', () => {
+    const onSetSpoilerText = vi.fn();
+    renderToolbar('table', onSetSpoilerText);
+    openTool(/^sheet$/i);
+    fireEvent.change(screen.getByLabelText(/^name$/i), { target: { value: 'Grond' } });
+    fireEvent.click(screen.getByRole('button', { name: /set character cw/i }));
+    expect(onSetSpoilerText).toHaveBeenCalledWith('[Grond]');
+  });
+});
+
+describe('whisper tool', () => {
+  it('inserts the whisper convention with target and secret message', () => {
+    const { inserted } = renderToolbar();
+    openTool(/^whisper$/i);
+    fireEvent.change(screen.getByLabelText(/whisper to/i), { target: { value: 'GM' } });
+    fireEvent.change(screen.getByLabelText(/secret message/i), {
+      target: { value: 'I search the chest' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^insert$/i }));
+    expect(inserted[0]).toBe('((whisper to GM: I search the chest))\n');
+  });
+
+  it('disables insert when message is empty', () => {
+    renderToolbar();
+    openTool(/^whisper$/i);
+    expect(screen.getByRole('button', { name: /^insert$/i })).toBeDisabled();
   });
 });

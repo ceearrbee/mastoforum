@@ -177,6 +177,22 @@ export function useThread(id: string | undefined, { onRootDeleted }: UseThreadOp
       setActionError(errorMessage(err, 'Delete failed')),
   });
 
+  const syncRemoteMutation = useMutation({
+    mutationFn: async () => {
+      const threadData = queryClient.getQueryData<ThreadData>(['thread', id]);
+      if (!threadData?.mainPost?.uri) return;
+      await requireClient(client).v2.search.list({
+        q: threadData.mainPost.uri,
+        resolve: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['thread', id] });
+    },
+    onError: (err: unknown) =>
+      setActionError(errorMessage(err, 'Failed to sync remote replies')),
+  });
+
   return {
     threadData: query.data,
     isLoading: query.isLoading,
@@ -186,5 +202,6 @@ export function useThread(id: string | undefined, { onRootDeleted }: UseThreadOp
     handleAction,
     muteMutation,
     deleteMutation,
+    syncRemoteMutation,
   };
 }

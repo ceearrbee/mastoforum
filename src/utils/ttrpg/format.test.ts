@@ -5,6 +5,7 @@ import {
   formatOoc,
   formatSheet,
   formatSpeech,
+  formatWhisper,
   hasPendingRolls,
   resolveRollCommands,
   type CharacterSheet,
@@ -50,6 +51,25 @@ describe('formatOoc', () => {
 
   it('returns empty for a blank note', () => {
     expect(formatOoc('  ')).toBe('');
+  });
+});
+
+describe('formatWhisper', () => {
+  it('wraps the whisper in the double-paren convention with target', () => {
+    expect(formatWhisper('GM', 'I search the chest')).toBe(
+      '((whisper to GM: I search the chest))',
+    );
+  });
+
+  it('collapses extra whitespace', () => {
+    expect(formatWhisper('  @alice  ', '  secret  message  ')).toBe(
+      '((whisper to @alice: secret message))',
+    );
+  });
+
+  it('returns empty if recipient or message is blank', () => {
+    expect(formatWhisper('', 'secret')).toBe('');
+    expect(formatWhisper('GM', '   ')).toBe('');
   });
 });
 

@@ -13,12 +13,14 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import ConfirmModal from '../components/ConfirmModal';
 import ErrorBoundary from '../components/ErrorBoundary';
+import InitiativeTracker from '../components/InitiativeTracker';
 import PageHeading from '../components/PageHeading';
 import PostCard from '../components/PostCard';
 import ReplyEditor from '../components/ReplyEditor';
 import StatusComposerModal from '../components/StatusComposerModal';
 import ShortcutsHelpModal from '../components/ShortcutsHelpModal';
 import ThreadToolbar from '../components/ThreadToolbar';
+import { extractInitiative } from '../utils/ttrpg/initiative';
 import { errorMessage } from '../utils/apiErrors';
 import { displayStatus, statusTitle } from '../utils/status';
 import {
@@ -88,6 +90,7 @@ export default function Thread() {
     handleAction,
     muteMutation,
     deleteMutation,
+    syncRemoteMutation,
   } = useThread(id, { onRootDeleted: () => navigate('/') });
 
   const flat: FlatPost[] = useMemo(
@@ -104,6 +107,15 @@ export default function Thread() {
         : [],
     [threadData],
   );
+
+  const initiativeEntries = useMemo(() => {
+    if (!settings.tabletopTools || !threadData) return [];
+    return extractInitiative([
+      ...threadData.ancestors,
+      threadData.mainPost,
+      ...threadData.descendants,
+    ]);
+  }, [settings.tabletopTools, threadData]);
 
   const collapseMap = useCollapseMap();
 
@@ -346,7 +358,13 @@ export default function Thread() {
           onMarkRead={markAllRead}
           allCollapsed={allCollapsed}
           onToggleCollapseAll={toggleCollapseAll}
+          onSyncRemote={() => syncRemoteMutation?.mutate()}
+          isSyncingRemote={syncRemoteMutation?.isPending ?? false}
         />
+      )}
+
+      {initiativeEntries.length > 0 && (
+        <InitiativeTracker entries={initiativeEntries} />
       )}
 
       {isLoading && <Loading description="Loading thread" withOverlay={false} />}

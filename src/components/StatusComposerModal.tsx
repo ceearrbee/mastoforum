@@ -152,7 +152,12 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
           disabled={mutation.isPending}
         />
         <div className={`${styles.editor} ${styles.editorWrap}`}>
-          <ComposerEditor value={content} onChange={setContent} placeholder="Write your post…" />
+          <ComposerEditor
+            value={content}
+            onChange={setContent}
+            placeholder="Write your post…"
+            onSetSpoilerText={setSpoilerText}
+          />
         </div>
         <div className={styles.counterRow}>
           <CharCounter remaining={remaining} />

@@ -39,10 +39,11 @@ function renderCard(p = post()) {
   );
 }
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
 describe('PostCard collapsing', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
 
   it('renders expanded by default', () => {
     const { container } = renderCard();
@@ -87,5 +88,57 @@ describe('PostCard collapsing', () => {
 
     const second = renderCard();
     expect(second.container.querySelector('.post-content')).toBeNull();
+  });
+});
+
+describe('PostCard protocol features', () => {
+  it('renders a secret whisper badge for direct visibility statuses', () => {
+    renderCard(post({ visibility: 'direct' as mastodon.v1.StatusVisibility }));
+    expect(screen.getByText(/whisper/i)).toBeInTheDocument();
+  });
+
+  it('renders a warning tag when a status with dice rolls was edited', () => {
+    renderCard(
+      post({
+        content: '<p>I roll for attack: 🎲 d20 ⇒ [20] = 20</p>',
+        editedAt: new Date('2026-05-01T01:00:00Z').toISOString(),
+      }),
+    );
+    expect(screen.getByRole('button', { name: /roll edited/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^edited$/i })).toBeNull();
+  });
+
+  it('renders normal edited tag for non-roll edits', () => {
+    renderCard(
+      post({
+        content: '<p>Just fixing a typo</p>',
+        editedAt: new Date('2026-05-01T01:00:00Z').toISOString(),
+      }),
+    );
+    expect(screen.getByRole('button', { name: /^edited$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /roll edited/i })).toBeNull();
+  });
+
+  it('renders native quote posts when post.quote is populated', () => {
+    renderCard(
+      post({
+        quote: {
+          state: 'accepted',
+          quotedStatus: post({
+            id: 'q1',
+            content: '<p>Quoted lore details</p>',
+            account: {
+              id: 'a2',
+              acct: 'bob@tavern',
+              displayName: 'Bob',
+              username: 'bob',
+              avatar: '',
+            } as mastodon.v1.Account,
+          }),
+        } as unknown as mastodon.v1.Quote,
+      }),
+    );
+    expect(screen.getByText(/quoting/i)).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
   });
 });

@@ -70,6 +70,15 @@ body {
   font-style: italic;
 }
 
+.post-content .tt-whisper {
+  color: var(--cds-support-info, #0f62fe);
+  background-color: var(--cds-highlight, rgba(15, 98, 254, 0.08));
+  padding: 0.0625rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.9375em;
+  font-style: italic;
+}
+
 .post-content .tt-sheet {
   display: block;
   margin: 0.5rem 0;

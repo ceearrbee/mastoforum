@@ -1,7 +1,7 @@
 export { useCurrentUser, useFollowedTags } from '../../utils/queries';
 export { useBookmarks } from './useBookmarks';
 export { useFavourites } from './useFavourites';
-export { useBoardTimeline } from './useBoardTimeline';
+export { useBoardTimeline, type BoardFilterOptions } from './useBoardTimeline';
 export { useTagInfo } from './useTagInfo';
 export { useThread, type ThreadData } from './useThread';
 // Shared infinite-list primitives + per-endpoint list hooks.

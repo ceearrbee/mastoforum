@@ -9,7 +9,9 @@ import {
   DataShare,
   Favorite,
   FavoriteFilled,
+  Locked,
   Repeat,
+  WarningAlt,
 } from '@carbon/icons-react';
 import type { mastodon } from 'masto';
 import AccountInfoPopover from './AccountInfoPopover';
@@ -23,6 +25,7 @@ import SanitizedHtml from './SanitizedHtml';
 import VisuallyHidden from './VisuallyHidden';
 import { useSettings } from '../context/SettingsContext';
 import { isPostCollapsed, togglePostCollapse, useCollapseMap } from '../utils/collapsedPosts';
+import { hasDiceRoll } from '../utils/ttrpg/render';
 import { boosterOf, displayNameOf, displayStatus, previewText } from '../utils/status';
 import styles from './PostCard.module.css';
 
@@ -103,6 +106,13 @@ export default function PostCard({
   const display = displayStatus(post);
   const isOwn = !!ownAccountId && display.account.id === ownAccountId;
   const edited = display.editedAt && display.editedAt !== display.createdAt;
+  const isWhisper = display.visibility === 'direct';
+  const hasRoll = hasDiceRoll(display.content);
+  const rollEdited = edited && hasRoll;
+  const nativeQuotedStatus =
+    display.quote && 'quotedStatus' in display.quote && display.quote.quotedStatus
+      ? display.quote.quotedStatus
+      : undefined;
   // Tell the reader what they're hiding, so a collapsed post isn't a black box.
   const hiddenNote = [
     display.mediaAttachments.length > 0
@@ -156,8 +166,25 @@ export default function PostCard({
             <time dateTime={display.createdAt}>{new Date(display.createdAt).toLocaleString()}</time>
           </a>
           <div className={styles.metaRow}>
+            {isWhisper && (
+              <span
+                className={styles.whisperBadge}
+                title="Secret whisper: visible only to mentioned accounts in this thread"
+              >
+                <Locked size={12} /> Whisper
+              </span>
+            )}
             <span>#{index + 1}</span>
-            {edited && (
+            {rollEdited ? (
+              <button
+                type="button"
+                className={styles.rollEditedTag}
+                onClick={() => setHistoryOpen(true)}
+                title="This post contains a dice roll and was edited after posting. Click to view edit history."
+              >
+                <WarningAlt size={12} /> roll edited
+              </button>
+            ) : edited ? (
               <button
                 type="button"
                 className={styles.editedTag}
@@ -166,7 +193,7 @@ export default function PostCard({
               >
                 edited
               </button>
-            )}
+            ) : null}
             {isOwn && (onEditClick || onDeleteClick) && (
               <OverflowMenu size="sm" iconDescription="Post actions" flipped>
                 {onEditClick && (
@@ -202,6 +229,7 @@ export default function PostCard({
       ) : (
         <div className={styles.bodyRegion} id={`post-body-${display.id}`}>
           {quoteOf && <QuoteContext post={quoteOf} />}
+          {!quoteOf && nativeQuotedStatus && <QuoteContext post={nativeQuotedStatus} isQuote />}
 
           {display.spoilerText ? (
             <details className={styles.spoiler}>

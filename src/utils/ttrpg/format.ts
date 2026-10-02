@@ -42,6 +42,14 @@ export function formatOoc(text: string): string {
   return body ? `((ooc: ${body}))` : '';
 }
 
+/** `((whisper to GM: I check the door))` */
+export function formatWhisper(recipient: string, message: string): string {
+  const who = clean(recipient);
+  const body = clean(message);
+  if (!who || !body) return '';
+  return `((whisper to ${who}: ${body}))`;
+}
+
 /** D&D-style ability modifier, or `null` when the score isn't a number. */
 export function abilityModifier(score: string): number | null {
   const n = Number(clean(score));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { enhanceTabletopHtml } from './render';
+import { enhanceTabletopHtml, hasDiceRoll } from './render';
 import { sanitizeStatusHtml } from '../sanitize';
 
 /** Statuses arrive from the server as HTML, with newlines as <br>. */
@@ -21,6 +21,16 @@ describe('enhanceTabletopHtml', () => {
     const html = enhanceTabletopHtml(body('He scouts ahead. ((ooc: I have darkvision))'));
     expect(html).toContain('He scouts ahead. ');
     expect(html).toContain('<span class="tt-ooc">((ooc: I have darkvision))</span>');
+  });
+
+  it('wraps an inline whisper aside', () => {
+    const html = enhanceTabletopHtml(
+      body('I lean over to the elf. ((whisper to Legolas: Orcs are coming))'),
+    );
+    expect(html).toContain('I lean over to the elf. ');
+    expect(html).toContain(
+      '<span class="tt-whisper">((whisper to Legolas: Orcs are coming))</span>',
+    );
   });
 
   it('groups the whole stat block under one wrapper', () => {
@@ -116,5 +126,18 @@ describe('sanitizeStatusHtml with enhanceTabletop', () => {
     const html = sanitizeStatusHtml(escaped, [], { enhanceTabletop: true });
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).not.toMatch(/<img/i);
+  });
+});
+
+describe('hasDiceRoll', () => {
+  it('detects formatted dice rolls in plaintext and html', () => {
+    expect(hasDiceRoll('🎲 2d6+3 ⇒ [4, 5] +3 = 12')).toBe(true);
+    expect(hasDiceRoll('<p>I attack! 🎲 d20 ⇒ [19] = 19</p>')).toBe(true);
+  });
+
+  it('rejects plain text and unrelated dice emoji usage', () => {
+    expect(hasDiceRoll('Just talking about 🎲 games')).toBe(false);
+    expect(hasDiceRoll('🎲 rolling later')).toBe(false);
+    expect(hasDiceRoll('')).toBe(false);
   });
 });

@@ -202,6 +202,9 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
         visibility,
         spoilerText,
       };
+      if (replyTo?.account?.id) {
+        params.allowedMentions = [replyTo.account.id];
+      }
       if (readyAttachmentIds.length > 0) {
         params.mediaIds = readyAttachmentIds;
         if (sensitive) params.sensitive = true;
@@ -308,6 +311,7 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
             placeholder="Write your reply…"
             mode={mode}
             onModeChange={setMode}
+            onSetSpoilerText={setSpoilerText}
           />
         </div>
 
@@ -438,9 +442,17 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
               <SelectItem value="public" text="Public" />
               <SelectItem value="unlisted" text="Unlisted" />
               <SelectItem value="private" text="Followers only" />
-              <SelectItem value="direct" text="Direct message" />
+              <SelectItem
+                value="direct"
+                text={mode === 'table' || tabletop ? 'Direct (Secret whisper)' : 'Direct message'}
+              />
               {showLocalVisibility && <SelectItem value="local" text="Local only" />}
             </Select>
+            {visibility === 'direct' && (
+              <p className={styles.whisperHint}>
+                🔒 Secret whisper: visible only to mentioned accounts.
+              </p>
+            )}
           </div>
 
           <div className={styles.submitGroup}>

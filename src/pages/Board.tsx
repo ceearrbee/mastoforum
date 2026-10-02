@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/icons-react';
@@ -10,7 +10,7 @@ import PaginatedList from '../components/PaginatedList';
 import StatusComposerModal from '../components/StatusComposerModal';
 import SortPills from '../components/SortPills';
 import TopicRow from '../components/TopicRow';
-import { useBoardTimeline, useTagInfo } from '../hooks/api';
+import { useBoardTimeline, useTagInfo, type BoardFilterOptions } from '../hooks/api';
 import { errorMessage } from '../utils/apiErrors';
 import { pushToast } from '../utils/toast';
 import { sortPosts, type SortKey } from '../utils/sortPosts';
@@ -18,6 +18,7 @@ import styles from './Board.module.css';
 
 export default function Board() {
   const { tag } = useParams<{ tag: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { client, credentials } = useAuth();
@@ -26,6 +27,18 @@ export default function Board() {
 
   const decodedTag = tag ? decodeURIComponent(tag) : '';
 
+  const allParam = searchParams.get('all');
+  const anyParam = searchParams.get('any');
+  const noneParam = searchParams.get('none');
+
+  const filterOptions = useMemo<BoardFilterOptions | undefined>(() => {
+    const all = allParam ? allParam.split(',').map((t) => t.trim()).filter(Boolean) : undefined;
+    const any = anyParam ? anyParam.split(',').map((t) => t.trim()).filter(Boolean) : undefined;
+    const none = noneParam ? noneParam.split(',').map((t) => t.trim()).filter(Boolean) : undefined;
+    if (!all && !any && !none) return undefined;
+    return { all, any, none };
+  }, [allParam, anyParam, noneParam]);
+
   const {
     items: posts,
     isLoading,
@@ -33,7 +46,7 @@ export default function Board() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useBoardTimeline(decodedTag);
+  } = useBoardTimeline(decodedTag, filterOptions);
 
   const sorted = useMemo(() => sortPosts(posts, sort), [posts, sort]);
 
@@ -82,7 +95,12 @@ export default function Board() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>#{decodedTag}</h1>
+        <h1 className={styles.title}>
+          #{decodedTag}
+          {filterOptions?.all && (
+            <span className={styles.compoundTag}> + #{filterOptions.all.join(' + #')}</span>
+          )}
+        </h1>
         <div className={styles.headerActions}>
           {tagInfo && (
             <Button
@@ -107,6 +125,30 @@ export default function Board() {
 
       <div className={styles.toolbar}>
         <SortPills value={sort} onChange={setSort} />
+        {filterOptions && (
+          <div className={styles.filterRow}>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--cds-text-secondary)' }}>
+              Filtered by: {[
+                ...(filterOptions.all?.map((t: string) => `all: #${t}`) ?? []),
+                ...(filterOptions.any?.map((t: string) => `any: #${t}`) ?? []),
+                ...(filterOptions.none?.map((t: string) => `not: #${t}`) ?? []),
+              ].join(', ')}
+            </span>
+            <button
+              type="button"
+              className={styles.clearFilter}
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete('all');
+                next.delete('any');
+                next.delete('none');
+                setSearchParams(next);
+              }}
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
       </div>
 
       <PaginatedList
