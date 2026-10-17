@@ -28,7 +28,8 @@
   background-color: var(--cds-layer);
   border: 1px solid var(--cds-border-subtle);
   border-radius: 4px;
-  padding: 0 1.25rem;
+  padding: 0;
+  overflow: hidden;
 }
 
 .muted {

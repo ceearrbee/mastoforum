@@ -1,9 +1,9 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding: 1.25rem 0;
   border-bottom: 1px solid var(--cds-border-subtle);
+  position: relative;
+  background-color: var(--cds-layer);
 }
 
 .card:last-child {
@@ -34,13 +34,148 @@
 }
 
 .collapsed {
-  gap: 0.5rem;
+  gap: 0;
 }
 
-/* `display: contents` keeps the body's children in the card's flex column, so
-   the wrapper exists only as an aria-controls target for the toggle. */
+/* `display: contents` keeps the body's children in the flex column */
 .bodyRegion {
   display: contents;
+}
+
+.boostBanner {
+  padding: 0.5rem 1rem;
+  background-color: var(--cds-layer-accent, var(--cds-layer));
+  border-bottom: 1px solid var(--cds-border-subtle);
+}
+
+.boostedBy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cds-text-secondary);
+}
+
+.boostedBy svg {
+  color: var(--cds-support-success);
+}
+
+/* Two-column post grid (phpBB style) */
+.postGrid {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  min-height: 100%;
+}
+
+.profilePane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem 0.75rem;
+  background-color: var(--cds-layer-accent, var(--cds-layer));
+  border-right: 1px solid var(--cds-border-subtle);
+}
+
+.profilePopover {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.profileTrigger {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.profileTriggerContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.profileIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.author {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--cds-text-primary);
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  text-align: center;
+}
+
+.acct {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  line-height: 1.2;
+  width: 100%;
+  word-break: break-all;
+  text-align: center;
+}
+
+.messagePane {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.messageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--cds-border-subtle);
+}
+
+.messageHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.timeLink {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.timeLink:hover {
+  color: var(--cds-link-primary);
+  text-decoration: underline;
+}
+
+.metaRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
 }
 
 .collapseToggle {
@@ -50,7 +185,6 @@
   flex-shrink: 0;
   width: 1.5rem;
   height: 1.5rem;
-  margin-left: -0.25rem;
   padding: 0;
   border: none;
   border-radius: 4px;
@@ -69,11 +203,28 @@
   outline-offset: -2px;
 }
 
+/* Collapsed single-row banner */
+.collapsedRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  background-color: var(--cds-layer);
+  min-height: 2.5rem;
+}
+
+.collapsedAuthor {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  white-space: nowrap;
+}
+
 .collapsedSummary {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
-  width: 100%;
+  flex-grow: 1;
   padding: 0;
   border: none;
   background: none;
@@ -81,6 +232,7 @@
   text-align: left;
   font-size: 0.875rem;
   color: var(--cds-text-secondary);
+  min-width: 0;
 }
 
 .collapsedSummary:hover .collapsedText {
@@ -106,61 +258,12 @@
   color: var(--cds-text-helper, var(--cds-text-secondary));
 }
 
-.boostedBy {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--cds-text-secondary);
-}
-
-.boostedBy svg {
-  color: var(--cds-support-success);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.author {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--cds-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.acct {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
-  line-height: 1.2;
-  word-break: break-all;
-}
-
-.meta {
-  text-align: right;
+.collapsedIndex {
   font-size: 0.75rem;
   color: var(--cds-text-secondary);
   white-space: nowrap;
-}
-
-.metaRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  justify-content: flex-end;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .editedTag {
@@ -231,15 +334,6 @@
   margin-bottom: 0.5rem;
 }
 
-.meta a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.meta a:hover {
-  color: var(--cds-link-primary);
-}
-
 .body {
   font-size: 0.9375rem;
   line-height: 1.6;
@@ -275,9 +369,65 @@
 .actionActive--reblog    { color: var(--cds-support-success); }
 .actionActive--bookmark  { color: var(--cds-link-primary); }
 
-.indent-1 { padding-left: 1rem; border-left: 2px solid var(--cds-border-subtle); }
-.indent-2 { padding-left: 2rem; border-left: 2px solid var(--cds-border-subtle); }
-.indent-3 { padding-left: 3rem; border-left: 2px solid var(--cds-border-subtle); }
-.indent-4 { padding-left: 3.5rem; border-left: 2px solid var(--cds-border-subtle); }
-.indent-5 { padding-left: 4rem; border-left: 2px solid var(--cds-border-subtle); }
-.indent-6 { padding-left: 4.5rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-1 { margin-left: 1rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-2 { margin-left: 2rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-3 { margin-left: 3rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-4 { margin-left: 3.5rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-5 { margin-left: 4rem; border-left: 2px solid var(--cds-border-subtle); }
+.indent-6 { margin-left: 4.5rem; border-left: 2px solid var(--cds-border-subtle); }
+
+@media (max-width: 640px) {
+  .postGrid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profilePane {
+    border-right: none;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    padding: 0.625rem 1rem;
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+  }
+
+  .profilePopover {
+    justify-content: flex-start;
+  }
+
+  .profileTrigger {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 0;
+  }
+
+  .profileTriggerContent {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 0.625rem;
+  }
+
+  .profileIdentity {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .author,
+  .acct {
+    text-align: left;
+  }
+
+  .messagePane {
+    padding: 0.875rem 1rem;
+  }
+
+  .indent-1 { margin-left: 0.5rem; }
+  .indent-2 { margin-left: 1rem; }
+  .indent-3 { margin-left: 1.5rem; }
+  .indent-4 { margin-left: 2rem; }
+  .indent-5 { margin-left: 2.5rem; }
+  .indent-6 { margin-left: 3rem; }
+}

@@ -127,178 +127,217 @@ export default function PostCard({
   return (
     <article id={`post-${display.id}`} className={className} ref={ref} tabIndex={tabIndex}>
       {booster && (
-        <AccountInfoPopover account={booster}>
-          <span className={styles.boostedBy}>
-            <Repeat size={14} />
-            <EmojiText
-              text={`${displayNameOf(booster)} boosted`}
-              emojis={booster.emojis}
-            />
-          </span>
-        </AccountInfoPopover>
+        <div className={styles.boostBanner}>
+          <AccountInfoPopover account={booster}>
+            <span className={styles.boostedBy}>
+              <Repeat size={14} />
+              <EmojiText
+                text={`${displayNameOf(booster)} boosted`}
+                emojis={booster.emojis}
+              />
+            </span>
+          </AccountInfoPopover>
+        </div>
       )}
-      <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.collapseToggle}
-          aria-expanded={!collapsed}
-          aria-controls={`post-body-${display.id}`}
-          title={collapsed ? 'Expand post' : 'Collapse post'}
-          onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-          <VisuallyHidden>{collapsed ? 'Expand post' : 'Collapse post'}</VisuallyHidden>
-        </button>
-        <AccountInfoPopover account={display.account}>
-          <AvatarChip account={display.account} size="md" />
-          <span className={styles.identity}>
-            <span className={styles.author}>
+
+      {collapsed ? (
+        <div className={styles.collapsedRow}>
+          <button
+            type="button"
+            className={styles.collapseToggle}
+            aria-expanded={false}
+            aria-controls={`post-body-${display.id}`}
+            title="Expand post"
+            onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+          >
+            <ChevronRight size={16} />
+            <VisuallyHidden>Expand post</VisuallyHidden>
+          </button>
+          <AccountInfoPopover account={display.account}>
+            <AvatarChip account={display.account} size="sm" />
+            <span className={styles.collapsedAuthor}>
               <EmojiText
                 text={displayNameOf(display.account)}
                 emojis={display.account.emojis}
               />
             </span>
-            <span className={styles.acct}>@{display.account.acct}</span>
-          </span>
-        </AccountInfoPopover>
-        <div className={styles.meta}>
-          <a href={postUrl(display)}>
-            <time dateTime={display.createdAt}>{new Date(display.createdAt).toLocaleString()}</time>
-          </a>
-          <div className={styles.metaRow}>
-            {isWhisper && (
-              <span
-                className={styles.whisperBadge}
-                title="Secret whisper: visible only to mentioned accounts in this thread"
-              >
-                <Locked size={12} /> Whisper
-              </span>
-            )}
-            <span>#{index + 1}</span>
-            {rollEdited ? (
-              <button
-                type="button"
-                className={styles.rollEditedTag}
-                onClick={() => setHistoryOpen(true)}
-                title="This post contains a dice roll and was edited after posting. Click to view edit history."
-              >
-                <WarningAlt size={12} /> roll edited
-              </button>
-            ) : edited ? (
-              <button
-                type="button"
-                className={styles.editedTag}
-                onClick={() => setHistoryOpen(true)}
-                title="View edit history"
-              >
-                edited
-              </button>
-            ) : null}
-            {isOwn && (onEditClick || onDeleteClick) && (
-              <OverflowMenu size="sm" iconDescription="Post actions" flipped>
-                {onEditClick && (
-                  <OverflowMenuItem itemText="Edit" onClick={() => onEditClick(display)} />
-                )}
-                {onDeleteClick && (
-                  <OverflowMenuItem
-                    itemText="Delete"
-                    isDelete
-                    hasDivider={!!onEditClick}
-                    onClick={() => onDeleteClick(display)}
-                  />
-                )}
-              </OverflowMenu>
-            )}
-          </div>
+          </AccountInfoPopover>
+          <button
+            type="button"
+            className={styles.collapsedSummary}
+            id={`post-body-${display.id}`}
+            onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+            title="Expand post"
+          >
+            <span className={styles.collapsedText}>
+              {display.spoilerText || previewText(display, COLLAPSED_PREVIEW_CHARS) || 'Empty post'}
+            </span>
+            {hiddenNote && <span className={styles.collapsedNote}>{hiddenNote}</span>}
+          </button>
+          <span className={styles.collapsedIndex}>#{index + 1}</span>
         </div>
-      </header>
-
-      {collapsed ? (
-        <button
-          type="button"
-          className={styles.collapsedSummary}
-          id={`post-body-${display.id}`}
-          onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
-          title="Expand post"
-        >
-          <span className={styles.collapsedText}>
-            {display.spoilerText || previewText(display, COLLAPSED_PREVIEW_CHARS) || 'Empty post'}
-          </span>
-          {hiddenNote && <span className={styles.collapsedNote}>{hiddenNote}</span>}
-        </button>
       ) : (
-        <div className={styles.bodyRegion} id={`post-body-${display.id}`}>
-          {quoteOf && <QuoteContext post={quoteOf} />}
-          {!quoteOf && nativeQuotedStatus && <QuoteContext post={nativeQuotedStatus} isQuote />}
-
-          {display.spoilerText ? (
-            <details className={styles.spoiler}>
-              <summary>{display.spoilerText}</summary>
-              <SanitizedHtml
-                className={`${styles.body} post-content`}
-                html={display.content}
-                emojis={display.emojis}
-                enhanceTabletop={settings.tabletopTools}
-              />
-            </details>
-          ) : (
-            <SanitizedHtml
-              className={`${styles.body} post-content`}
-              html={display.content}
-              emojis={display.emojis}
-              enhanceTabletop={settings.tabletopTools}
-            />
-          )}
-
-          {display.poll && <PollRenderer poll={display.poll} statusId={display.id} />}
-
-          {display.mediaAttachments.length > 0 && <MediaList media={display.mediaAttachments} />}
-
-          <div className={styles.actions}>
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={display.favourited ? FavoriteFilled : Favorite}
-              onClick={() => onAction(display.id, display.favourited ? 'unfavourite' : 'favourite')}
-              className={display.favourited ? styles['actionActive--favourite'] : undefined}
-              aria-pressed={!!display.favourited}
+        <div className={styles.postGrid}>
+          <aside className={styles.profilePane}>
+            <AccountInfoPopover
+              account={display.account}
+              className={styles.profilePopover}
+              triggerClassName={styles.profileTrigger}
             >
-              {display.favouritesCount || 'Like'}
-              {display.favourited && <VisuallyHidden>(liked)</VisuallyHidden>}
-            </Button>
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={DataShare}
-              onClick={() => onAction(display.id, display.reblogged ? 'unreblog' : 'reblog')}
-              className={display.reblogged ? styles['actionActive--reblog'] : undefined}
-              aria-pressed={!!display.reblogged}
-            >
-              {display.reblogsCount || 'Boost'}
-              {display.reblogged && <VisuallyHidden>(boosted)</VisuallyHidden>}
-            </Button>
-            <Button
-              kind="ghost"
-              size="sm"
-              renderIcon={display.bookmarked ? BookmarkFilled : Bookmark}
-              onClick={() => onAction(display.id, display.bookmarked ? 'unbookmark' : 'bookmark')}
-              className={display.bookmarked ? styles['actionActive--bookmark'] : undefined}
-              aria-pressed={!!display.bookmarked}
-            >
-              Save
-              {display.bookmarked && <VisuallyHidden>(saved)</VisuallyHidden>}
-            </Button>
-            <span className={styles.spacer} />
-            {onReplyClick && (
-              <Button
-                kind="ghost"
-                size="sm"
-                renderIcon={ChatLaunch}
-                onClick={() => onReplyClick(display)}
-              >
-                Reply
-              </Button>
-            )}
+              <div className={styles.profileTriggerContent}>
+                <AvatarChip account={display.account} size="lg" />
+                <div className={styles.profileIdentity}>
+                  <span className={styles.author}>
+                    <EmojiText
+                      text={displayNameOf(display.account)}
+                      emojis={display.account.emojis}
+                    />
+                  </span>
+                  <span className={styles.acct}>@{display.account.acct}</span>
+                </div>
+              </div>
+            </AccountInfoPopover>
+          </aside>
+
+          <div className={styles.messagePane} id={`post-body-${display.id}`}>
+            <header className={styles.messageHeader}>
+              <div className={styles.messageHeaderLeft}>
+                <button
+                  type="button"
+                  className={styles.collapseToggle}
+                  aria-expanded={true}
+                  aria-controls={`post-body-${display.id}`}
+                  title="Collapse post"
+                  onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+                >
+                  <ChevronDown size={16} />
+                  <VisuallyHidden>Collapse post</VisuallyHidden>
+                </button>
+                <a href={postUrl(display)} className={styles.timeLink}>
+                  <time dateTime={display.createdAt}>{new Date(display.createdAt).toLocaleString()}</time>
+                </a>
+                {isWhisper && (
+                  <span
+                    className={styles.whisperBadge}
+                    title="Secret whisper: visible only to mentioned accounts in this thread"
+                  >
+                    <Locked size={12} /> Whisper
+                  </span>
+                )}
+              </div>
+              <div className={styles.metaRow}>
+                <span>#{index + 1}</span>
+                {rollEdited ? (
+                  <button
+                    type="button"
+                    className={styles.rollEditedTag}
+                    onClick={() => setHistoryOpen(true)}
+                    title="This post contains a dice roll and was edited after posting. Click to view edit history."
+                  >
+                    <WarningAlt size={12} /> roll edited
+                  </button>
+                ) : edited ? (
+                  <button
+                    type="button"
+                    className={styles.editedTag}
+                    onClick={() => setHistoryOpen(true)}
+                    title="View edit history"
+                  >
+                    edited
+                  </button>
+                ) : null}
+                {isOwn && (onEditClick || onDeleteClick) && (
+                  <OverflowMenu size="sm" iconDescription="Post actions" flipped>
+                    {onEditClick && (
+                      <OverflowMenuItem itemText="Edit" onClick={() => onEditClick(display)} />
+                    )}
+                    {onDeleteClick && (
+                      <OverflowMenuItem
+                        itemText="Delete"
+                        isDelete
+                        hasDivider={!!onEditClick}
+                        onClick={() => onDeleteClick(display)}
+                      />
+                    )}
+                  </OverflowMenu>
+                )}
+              </div>
+            </header>
+
+            <div className={styles.bodyRegion}>
+              {quoteOf && <QuoteContext post={quoteOf} />}
+              {!quoteOf && nativeQuotedStatus && <QuoteContext post={nativeQuotedStatus} isQuote />}
+
+              {display.spoilerText ? (
+                <details className={styles.spoiler}>
+                  <summary>{display.spoilerText}</summary>
+                  <SanitizedHtml
+                    className={`${styles.body} post-content`}
+                    html={display.content}
+                    emojis={display.emojis}
+                    enhanceTabletop={settings.tabletopTools}
+                  />
+                </details>
+              ) : (
+                <SanitizedHtml
+                  className={`${styles.body} post-content`}
+                  html={display.content}
+                  emojis={display.emojis}
+                  enhanceTabletop={settings.tabletopTools}
+                />
+              )}
+
+              {display.poll && <PollRenderer poll={display.poll} statusId={display.id} />}
+
+              {display.mediaAttachments.length > 0 && <MediaList media={display.mediaAttachments} />}
+
+              <div className={styles.actions}>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={display.favourited ? FavoriteFilled : Favorite}
+                  onClick={() => onAction(display.id, display.favourited ? 'unfavourite' : 'favourite')}
+                  className={display.favourited ? styles['actionActive--favourite'] : undefined}
+                  aria-pressed={!!display.favourited}
+                >
+                  {display.favouritesCount || 'Like'}
+                  {display.favourited && <VisuallyHidden>(liked)</VisuallyHidden>}
+                </Button>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={DataShare}
+                  onClick={() => onAction(display.id, display.reblogged ? 'unreblog' : 'reblog')}
+                  className={display.reblogged ? styles['actionActive--reblog'] : undefined}
+                  aria-pressed={!!display.reblogged}
+                >
+                  {display.reblogsCount || 'Boost'}
+                  {display.reblogged && <VisuallyHidden>(boosted)</VisuallyHidden>}
+                </Button>
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={display.bookmarked ? BookmarkFilled : Bookmark}
+                  onClick={() => onAction(display.id, display.bookmarked ? 'unbookmark' : 'bookmark')}
+                  className={display.bookmarked ? styles['actionActive--bookmark'] : undefined}
+                  aria-pressed={!!display.bookmarked}
+                >
+                  Save
+                  {display.bookmarked && <VisuallyHidden>(saved)</VisuallyHidden>}
+                </Button>
+                <span className={styles.spacer} />
+                {onReplyClick && (
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={ChatLaunch}
+                    onClick={() => onReplyClick(display)}
+                  >
+                    Reply
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

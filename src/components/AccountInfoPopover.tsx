@@ -31,9 +31,16 @@ interface Props {
   account: AccountLike;
   /** Optional custom trigger; defaults to an AvatarChip + display name. */
   children?: ReactNode;
+  className?: string;
+  triggerClassName?: string;
 }
 
-export default function AccountInfoPopover({ account, children }: Props) {
+export default function AccountInfoPopover({
+  account,
+  children,
+  className,
+  triggerClassName,
+}: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -64,10 +71,10 @@ export default function AccountInfoPopover({ account, children }: Props) {
     : `@${account.acct}`;
 
   return (
-    <span className={styles.wrap} ref={wrapRef}>
+    <span className={`${styles.wrap} ${className ?? ''}`} ref={wrapRef}>
       <button
         type="button"
-        className={styles.trigger}
+        className={`${styles.trigger} ${triggerClassName ?? ''}`}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={popoverId}
