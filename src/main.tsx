@@ -12,8 +12,8 @@ import {
   isRateLimited,
   isUnauthorized,
   notifyRateLimited,
-  notifyUnauthorized,
   rateLimitDelayMs,
+  watchUnauthorizedResponses,
 } from './utils/apiErrors';
 import { installGlobalErrorHandlers, reportError, type ErrorSource } from './utils/telemetry';
 import './index.css';
@@ -23,10 +23,8 @@ import '@carbon/styles/css/styles.css';
 const EXPECTED_STATUSES = new Set([401, 403, 404, 422, 429]);
 
 const handleApiError = (err: unknown, source: ErrorSource) => {
-  if (isUnauthorized(err)) {
-    notifyUnauthorized();
-    return;
-  }
+  // The fetch watcher below already announced this 401 with its request's token.
+  if (isUnauthorized(err)) return;
   if (isRateLimited(err)) {
     notifyRateLimited({ retryInMs: rateLimitDelayMs(err) });
     return;
@@ -41,6 +39,7 @@ const handleApiError = (err: unknown, source: ErrorSource) => {
 };
 
 installGlobalErrorHandlers();
+watchUnauthorizedResponses();
 
 const queryClient = new QueryClient({
   defaultOptions: {

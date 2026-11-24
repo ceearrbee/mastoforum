@@ -18,20 +18,50 @@ export interface SanitizedCss {
 }
 
 const REMOTE_URL = /url\(\s*(['"]?)\s*(?:https?:)?\/\/[^)]*\1\s*\)/gi;
+// image-set() accepts bare quoted strings as URLs, which REMOTE_URL does not see.
+const IMAGE_SET = /(?:-webkit-)?image-set\(((?:[^()]|\([^()]*\))*)\)/gi;
+const REMOTE_STRING = /(['"])\s*(?:https?:)?\/\/[^'"]*\1/i;
 const IMPORT_RULE = /@import\b[^;]*;/gi;
+// At-rules that hold a `cssRules` list but are not conditional/layer wrappers.
+const NON_GROUPING_AT_RULE = /^@(?:-\w+-)?keyframes\b|^@page\b/i;
 
 function stripRemoteUrls(cssText: string): { text: string; stripped: boolean } {
   let stripped = false;
-  const text = cssText.replace(REMOTE_URL, () => {
+  const mark = () => {
     stripped = true;
     return 'none';
-  });
+  };
+  const text = cssText
+    .replace(REMOTE_URL, mark)
+    .replace(IMAGE_SET, (match, body: string) => (REMOTE_STRING.test(body) ? mark() : match));
   return { text, stripped };
 }
 
+/** Splits a selector list on top-level commas, ignoring ones in (), [] or strings. */
+function splitSelectors(selectorText: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quote = '';
+  let start = 0;
+  for (let i = 0; i < selectorText.length; i++) {
+    const ch = selectorText[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = '';
+    } else if (ch === '"' || ch === "'") quote = ch;
+    else if (ch === '(' || ch === '[') depth++;
+    else if (ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    else if (ch === ',' && depth === 0) {
+      parts.push(selectorText.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(selectorText.slice(start));
+  return parts;
+}
+
 function scopeSelector(selectorText: string): string {
-  return selectorText
-    .split(',')
+  return splitSelectors(selectorText)
     .map((part) => {
       const sel = part.trim();
       if (!sel) return sel;
@@ -66,23 +96,26 @@ function scopeRule(rule: CSSRule): ScopeResult {
     };
   }
 
-  // Grouping rules (@media, @supports) — keep the wrapper, recurse inside.
-  if (rule.type === CSSRule.MEDIA_RULE || rule.type === CSSRule.SUPPORTS_RULE) {
-    const groupRule = rule as CSSGroupingRule;
-    const condition = (groupRule as CSSMediaRule).conditionText ?? '';
-    const keyword = rule.type === CSSRule.MEDIA_RULE ? '@media' : '@supports';
-    let blockedImport = false;
-    let strippedRemote = false;
-    const inner = Array.from(groupRule.cssRules)
-      .map((r) => {
-        const res = scopeRule(r);
-        blockedImport ||= res.blockedImport;
-        strippedRemote ||= res.strippedRemote;
-        return res.text;
-      })
-      .filter(Boolean)
-      .join('\n');
-    return { text: `${keyword} ${condition} {\n${inner}\n}`, blockedImport, strippedRemote };
+  // Grouping rules (@media, @supports, @layer, @container, …): keep the
+  // prelude, recurse inside so nested style rules get scoped too.
+  const nested = (rule as CSSGroupingRule).cssRules;
+  if (nested && !NON_GROUPING_AT_RULE.test(rule.cssText)) {
+    const brace = rule.cssText.indexOf('{');
+    if (brace > 0) {
+      const prelude = rule.cssText.slice(0, brace).trim();
+      let blockedImport = false;
+      let strippedRemote = false;
+      const inner = Array.from(nested)
+        .map((r) => {
+          const res = scopeRule(r);
+          blockedImport ||= res.blockedImport;
+          strippedRemote ||= res.strippedRemote;
+          return res.text;
+        })
+        .filter(Boolean)
+        .join('\n');
+      return { text: `${prelude} {\n${inner}\n}`, blockedImport, strippedRemote };
+    }
   }
 
   // Anything else (@font-face, @keyframes, …): keep, but still strip remote urls

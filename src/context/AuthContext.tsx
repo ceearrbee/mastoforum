@@ -58,16 +58,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (next) setCredentials(next);
   }, []);
 
-  // When a 401 is observed anywhere, sign the active account out (falling back
-  // to the next saved account, if any) so the user re-auths.
-  useEffect(() => onUnauthorized(() => {
-    void logoutAuth().then((next) => setCredentials(next));
-  }), []);
+  // A 401 signs the active account out (falling back to the next saved account)
+  // only if the failing request used the active token; a late 401 from a
+  // previous account is ignored. Concurrent 401s for one token run one logout.
+  const loggingOutTokenRef = useRef<string | null>(null);
+  const activeToken = credentials?.token ?? null;
+  useEffect(() => onUnauthorized((token) => {
+    if (token !== activeToken || loggingOutTokenRef.current === token) return;
+    loggingOutTokenRef.current = token;
+    void logoutAuth()
+      .then((next) => setCredentials(next))
+      .finally(() => {
+        loggingOutTokenRef.current = null;
+      });
+  }), [activeToken]);
 
   // Cross-tab sync: when another tab logs in or out, mirror the change here.
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === null || e.key === 'masto_access_token' || e.key === 'masto_instance') {
+      if (e.key === null || e.key === 'mastoforum_accounts' || e.key === 'mastoforum_active_instance') {
         setCredentials(getMastodonCredentials());
       }
     };

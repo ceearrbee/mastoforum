@@ -3,6 +3,7 @@ import {
   base64Url,
   buildPkceChallenge,
   getActiveInstanceUrl,
+  getMastodonCredentials,
   handleMastodonCallback,
   listAccounts,
   logoutMastodon,
@@ -26,6 +27,30 @@ describe('normaliseInstanceUrl', () => {
 
   it('rejects empty input', () => {
     expect(() => normaliseInstanceUrl('   ')).toThrow();
+  });
+
+  it('reduces the input to its origin, dropping path, query and hash', () => {
+    expect(normaliseInstanceUrl('https://example.com/some/path?x=1#frag')).toBe('https://example.com');
+    expect(normaliseInstanceUrl('example.com/@user')).toBe('https://example.com');
+  });
+
+  it('drops embedded credentials and keeps a custom port', () => {
+    expect(normaliseInstanceUrl('https://user:pw@example.com:8443/x')).toBe('https://example.com:8443');
+  });
+
+  it('rejects http for non-local hosts', () => {
+    expect(() => normaliseInstanceUrl('http://mastodon.social')).toThrow(/https/i);
+  });
+
+  it('allows http for localhost and loopback addresses', () => {
+    expect(normaliseInstanceUrl('http://localhost:3000/x')).toBe('http://localhost:3000');
+    expect(normaliseInstanceUrl('http://127.0.0.1:3000')).toBe('http://127.0.0.1:3000');
+  });
+
+  it('rejects other schemes and unparseable input', () => {
+    expect(() => normaliseInstanceUrl('ftp://example.com')).toThrow();
+    expect(() => normaliseInstanceUrl('javascript:alert(1)')).toThrow();
+    expect(() => normaliseInstanceUrl('https://')).toThrow();
   });
 });
 
@@ -104,8 +129,11 @@ describe('handleMastodonCallback', () => {
 
     await handleMastodonCallback('code', 's');
 
-    expect(localStorage.getItem('masto_access_token')).toBe('tok');
-    expect(localStorage.getItem('masto_instance')).toBe('https://example.com');
+    expect(listAccounts()[0]).toMatchObject({ url: 'https://example.com', token: 'tok' });
+    expect(getActiveInstanceUrl()).toBe('https://example.com');
+    // The token lives only in the accounts map, not in a legacy mirror key.
+    expect(localStorage.getItem('masto_access_token')).toBeNull();
+    expect(localStorage.getItem('masto_instance')).toBeNull();
     // PKCE state and verifier are cleared after success.
     expect(sessionStorage.getItem('masto_oauth_state')).toBeNull();
     expect(sessionStorage.getItem('masto_code_verifier')).toBeNull();
@@ -142,7 +170,8 @@ describe('handleMastodonCallback', () => {
     expect(body.client_secret).toBe('shh');
     expect(body.code_verifier).toBe('v');
     // The secret is persisted on the account and the pending copy is cleared.
-    expect(localStorage.getItem('masto_client_secret')).toBe('shh');
+    expect(listAccounts()[0].clientSecret).toBe('shh');
+    expect(localStorage.getItem('masto_client_secret')).toBeNull();
     expect(sessionStorage.getItem('masto_pending_client_secret')).toBeNull();
   });
 });
@@ -168,6 +197,21 @@ describe('migrateLegacyAccount', () => {
       clientId: 'cid',
     });
     expect(getActiveInstanceUrl()).toBe('https://example.social');
+  });
+
+  it('moves the legacy token and client secret into the map and deletes the legacy keys', () => {
+    localStorage.setItem('masto_instance', 'https://example.social');
+    localStorage.setItem('masto_access_token', 'tok');
+    localStorage.setItem('masto_client_id', 'cid');
+    localStorage.setItem('masto_client_secret', 'shh');
+
+    migrateLegacyAccount();
+
+    expect(listAccounts()[0]).toMatchObject({ token: 'tok', clientId: 'cid', clientSecret: 'shh' });
+    for (const key of ['masto_instance', 'masto_access_token', 'masto_client_id', 'masto_client_secret']) {
+      expect(localStorage.getItem(key)).toBeNull();
+    }
+    expect(getMastodonCredentials()).toEqual({ url: 'https://example.social', token: 'tok' });
   });
 
   it('is idempotent — running twice keeps a single entry', () => {
@@ -202,6 +246,7 @@ describe('migrateLegacyAccount', () => {
 
     const urls = listAccounts().map((a) => a.url).sort();
     expect(urls).toEqual(['https://a.social', 'https://b.social']);
+    expect(getActiveInstanceUrl()).toBe('https://a.social');
   });
 });
 
@@ -210,7 +255,7 @@ describe('switchActiveAccount', () => {
     localStorage.clear();
   });
 
-  it('mirrors the chosen account into the active (legacy) keys', () => {
+  it('points the active instance at the chosen account without writing legacy keys', () => {
     localStorage.setItem(
       'mastoforum_accounts',
       JSON.stringify({
@@ -224,9 +269,10 @@ describe('switchActiveAccount', () => {
 
     expect(creds).toEqual({ url: 'https://b.social', token: 'b' });
     expect(getActiveInstanceUrl()).toBe('https://b.social');
-    expect(localStorage.getItem('masto_instance')).toBe('https://b.social');
-    expect(localStorage.getItem('masto_access_token')).toBe('b');
-    expect(localStorage.getItem('masto_client_id')).toBe('cb');
+    expect(getMastodonCredentials()).toEqual({ url: 'https://b.social', token: 'b' });
+    expect(localStorage.getItem('masto_instance')).toBeNull();
+    expect(localStorage.getItem('masto_access_token')).toBeNull();
+    expect(localStorage.getItem('masto_client_id')).toBeNull();
   });
 
   it('returns null for an unknown instance', () => {
@@ -265,15 +311,13 @@ describe('logoutMastodon', () => {
       }),
     );
     localStorage.setItem('mastoforum_active_instance', 'https://a.social');
-    localStorage.setItem('masto_instance', 'https://a.social');
-    localStorage.setItem('masto_access_token', 'a');
-    localStorage.setItem('masto_client_id', 'ca');
 
     const next = await logoutMastodon();
 
     expect(next).toEqual({ url: 'https://b.social', token: 'b' });
     expect(listAccounts().map((acc) => acc.url)).toEqual(['https://b.social']);
-    expect(localStorage.getItem('masto_access_token')).toBe('b');
+    expect(getMastodonCredentials()).toEqual({ url: 'https://b.social', token: 'b' });
+    expect(localStorage.getItem('masto_access_token')).toBeNull();
   });
 
   it('clears all storage and returns null when the last account logs out', async () => {
@@ -284,14 +328,11 @@ describe('logoutMastodon', () => {
       }),
     );
     localStorage.setItem('mastoforum_active_instance', 'https://only.social');
-    localStorage.setItem('masto_instance', 'https://only.social');
-    localStorage.setItem('masto_access_token', 'tok');
-    localStorage.setItem('masto_client_id', 'cid');
 
     const result = await logoutMastodon();
 
     expect(result).toBeNull();
-    expect(localStorage.getItem('masto_instance')).toBeNull();
+    expect(getActiveInstanceUrl()).toBeNull();
     expect(localStorage.getItem('mastoforum_accounts')).toBeNull();
   });
 });

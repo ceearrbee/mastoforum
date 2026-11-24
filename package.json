@@ -33,7 +33,7 @@
     "@carbon/react": "^1.108.0",
     "@carbon/styles": "^1.107.0",
     "@tanstack/react-query": "^5.100.14",
-    "dompurify": "^3.4.7",
+    "dompurify": "^3.5.0",
     "easymde": "^2.21.0",
     "masto": "^7.11.1",
     "react": "^19.2.6",
@@ -52,17 +52,17 @@
     "@types/codemirror": "^5.60.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "axe-core": "^4.11.4",
     "codemirror": "^5.65.21",
-    "eslint": "^10.3.0",
+    "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12",
-    "vitest": "^4.1.11"
+    "typescript-eslint": "^8.74.0",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.12"
   }
 }

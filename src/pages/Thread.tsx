@@ -39,6 +39,7 @@ import {
 } from '../utils/collapsedPosts';
 import { recordRecentThread } from '../utils/recentThreads';
 import {
+  firstUnseenId,
   getThreadSeen,
   markSeenAfter,
   markThreadSeen,
@@ -159,22 +160,25 @@ export default function Thread() {
     seenHandledRef.current = tid;
 
     // Scroll to — and briefly highlight — the first reply we haven't seen yet.
-    const prior = getThreadSeen(tid);
-    if (prior && threadData.descendants.length > prior.seenReplies) {
-      const firstNew = threadData.descendants[prior.seenReplies];
-      if (firstNew) {
-        requestAnimationFrame(() => {
-          const el = postEls.current.get(firstNew.id);
-          if (el) scrollIntoViewMotionSafe(el, { block: 'center' });
-          setHighlightId(firstNew.id);
-          setTimeout(() => setHighlightId(null), 2500);
-        });
-      }
+    const descendantIds = threadData.descendants.map((d) => d.id);
+    const firstNewId = firstUnseenId(getThreadSeen(tid), descendantIds);
+    if (firstNewId) {
+      requestAnimationFrame(() => {
+        const el = postEls.current.get(firstNewId);
+        if (el) scrollIntoViewMotionSafe(el, { block: 'center' });
+        setHighlightId(firstNewId);
+        setTimeout(() => setHighlightId(null), 2500);
+      });
     }
 
     // Only advance the read marker once the user has dwelled on the thread.
     dwellCancelRef.current?.();
-    dwellCancelRef.current = markSeenAfter(tid, threadData.mainPost.repliesCount, 3000);
+    dwellCancelRef.current = markSeenAfter(
+      tid,
+      threadData.mainPost.repliesCount,
+      3000,
+      descendantIds,
+    );
   }, [threadData]);
 
   useEffect(() => () => dwellCancelRef.current?.(), []);
@@ -198,7 +202,11 @@ export default function Thread() {
     // explicit action is the only writer.
     dwellCancelRef.current?.();
     dwellCancelRef.current = null;
-    markThreadSeen(threadData.mainPost.id, threadData.mainPost.repliesCount);
+    markThreadSeen(
+      threadData.mainPost.id,
+      threadData.mainPost.repliesCount,
+      threadData.descendants.map((d) => d.id),
+    );
   }, [threadData]);
 
   // Bring the composer into view whenever a reply target is set (Reply button or `r`).
@@ -445,6 +453,7 @@ export default function Thread() {
       <div ref={composerRef}>
         <ReplyEditor
           threadId={id!}
+          rootVisibility={threadData?.mainPost.visibility}
           replyTo={replyTo}
           onClearReplyTo={() => setReplyTo(null)}
         />

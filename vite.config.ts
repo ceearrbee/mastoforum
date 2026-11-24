@@ -1,5 +1,5 @@
 import { defineConfig, configDefaults } from 'vitest/config';
-import { loadEnv } from 'vite';
+import { loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, readFileSync } from 'node:fs';
@@ -46,6 +46,35 @@ function spaFallback() {
   };
 }
 
+// Production-only: the dev server needs a ws: HMR socket that this policy blocks.
+// font-src covers Carbon's IBM Plex CDN; the bootstrapcdn entries cover the
+// Font Awesome stylesheet EasyMDE loads for its toolbar icons.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "img-src 'self' https: data: blob:",
+  'media-src https: data: blob:',
+  'connect-src https: wss:',
+  "style-src 'self' 'unsafe-inline' https://maxcdn.bootstrapcdn.com",
+  "font-src 'self' data: https://1.www.s81c.com https://maxcdn.bootstrapcdn.com",
+  "script-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join('; ');
+
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: CONTENT_SECURITY_POLICY },
+        injectTo: 'head-prepend',
+      },
+    ],
+  };
+}
+
 export default defineConfig(({ mode }) => {
   // index.html's %VITE_APP_NAME% must always resolve, or builds without a
   // .env (CI, self-hosters) ship an empty <title>. Default it here; an env
@@ -57,7 +86,7 @@ export default defineConfig(({ mode }) => {
     // Project pages serve under /<repo>/. Set VITE_BASE at build time (the deploy
     // workflow derives it from the repo name); defaults to '/' for dev and root.
     base: process.env.VITE_BASE || '/',
-    plugins: [react(), spaFallback()],
+    plugins: [react(), spaFallback(), contentSecurityPolicy()],
     // Baked in at build time and surfaced in the footer, so a deployed page can
     // be tied back to the exact commit it was built from.
     define: {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  InlineLoading,
   InlineNotification,
   Modal,
   Select,
@@ -12,6 +13,8 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings, type VisibilityType } from '../context/SettingsContext';
 import { graphemeLength } from '../utils/text';
 import { errorMessage } from '../utils/apiErrors';
+import { stripHtml } from '../utils/sanitize';
+import { useStatusSource } from '../hooks/api/useStatusSource';
 import { getMaxCharacters, supportsLocalOnly } from '../utils/instanceConfig';
 import { cleanPollOptions, isPollValid } from '../utils/poll';
 import { createStatusWithLocalFallback } from '../utils/composeStatus';
@@ -46,6 +49,7 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
     : 'closed';
 
   const [seededFor, setSeededFor] = useState<string | null>(null);
+  const [sourceSeededFor, setSourceSeededFor] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [spoilerText, setSpoilerText] = useState('');
   const [visibility, setVisibility] = useState<ComposerVisibility>(settings.defaultVisibility);
@@ -55,11 +59,21 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
 
   const tabletop = settings.tabletopTools;
 
+  // Mastodon returns `status.text` as null outside a delete response, so the
+  // edit form loads the editable source separately.
+  const isEdit = open && mode.kind === 'edit';
+  const sourceQuery = useStatusSource(
+    mode.kind === 'edit' ? mode.status.id : null,
+    sessionKey,
+    isEdit,
+  );
+  const loadingSource = isEdit && sourceSeededFor !== sessionKey;
+
   // Re-seed during render whenever the open session changes.
   if (open && seededFor !== sessionKey) {
     setSeededFor(sessionKey);
     if (mode.kind === 'edit') {
-      setContent(mode.status.text ?? '');
+      setContent('');
       setSpoilerText(mode.status.spoilerText ?? '');
       setVisibility(mode.status.visibility as ComposerVisibility);
     } else {
@@ -72,6 +86,24 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
     setError('');
   } else if (!open && seededFor !== null) {
     setSeededFor(null);
+    setSourceSeededFor(null);
+  }
+
+  // Seed the text once the source fetch settles; a failure falls back to the
+  // post's rendered content as plain text.
+  if (
+    loadingSource &&
+    seededFor === sessionKey &&
+    mode.kind === 'edit' &&
+    (sourceQuery.isSuccess || sourceQuery.isError)
+  ) {
+    setSourceSeededFor(sessionKey);
+    if (sourceQuery.isSuccess) {
+      setContent(sourceQuery.data.text);
+      setSpoilerText(sourceQuery.data.spoilerText);
+    } else {
+      setContent(mode.status.text ?? stripHtml(mode.status.content));
+    }
   }
 
   const mutation = useMutation({
@@ -139,67 +171,73 @@ export default function StatusComposerModal({ open, onClose, mode }: Props) {
       modalHeading={title}
       primaryButtonText={mutation.isPending ? 'Posting…' : submitText}
       secondaryButtonText="Cancel"
-      primaryButtonDisabled={mutation.isPending || !content.trim() || overLimit || !pollOk}
+      primaryButtonDisabled={
+        loadingSource || mutation.isPending || !content.trim() || overLimit || !pollOk
+      }
       size="md"
     >
-      <div className={styles.body}>
-        <TextInput
-          id="compose-spoiler"
-          labelText="Subject / content warning (optional)"
-          placeholder="e.g. chapter 2, spoilers, language"
-          value={spoilerText}
-          onChange={(e) => setSpoilerText(e.target.value)}
-          disabled={mutation.isPending}
-        />
-        <div className={`${styles.editor} ${styles.editorWrap}`}>
-          <ComposerEditor
-            value={content}
-            onChange={setContent}
-            placeholder="Write your post…"
-            onSetSpoilerText={setSpoilerText}
-          />
-        </div>
-        <div className={styles.counterRow}>
-          <CharCounter remaining={remaining} />
-        </div>
-        {mode.kind === 'new-topic' && (
-          <PollComposer value={poll} onChange={setPoll} disabled={mutation.isPending} />
-        )}
-        <Select
-          id="compose-visibility"
-          labelText="Visibility"
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as ComposerVisibility)}
-          disabled={mutation.isPending || mode.kind === 'edit'}
-        >
-          <SelectItem value="public" text="Public" />
-          <SelectItem value="unlisted" text="Unlisted" />
-          <SelectItem value="private" text="Followers only" />
-          <SelectItem value="direct" text="Direct message" />
-          {showLocalVisibility && mode.kind === 'new-topic' && (
-            <SelectItem value="local" text="Local only" />
-          )}
-        </Select>
-        {mode.kind === 'edit' && (
-          <p className={styles.hint}>Visibility cannot be changed after posting.</p>
-        )}
-        {mode.kind === 'new-topic' && (
-          <ScheduleField
-            value={scheduledAt}
-            onChange={setScheduledAt}
+      {loadingSource ? (
+        <InlineLoading description="Loading post…" />
+      ) : (
+        <div className={styles.body}>
+          <TextInput
+            id="compose-spoiler"
+            labelText="Subject / content warning (optional)"
+            placeholder="e.g. chapter 2, spoilers, language"
+            value={spoilerText}
+            onChange={(e) => setSpoilerText(e.target.value)}
             disabled={mutation.isPending}
           />
-        )}
-        {error && (
-          <InlineNotification
-            kind="error"
-            title="Post failed"
-            subtitle={error}
-            lowContrast
-            onCloseButtonClick={() => setError('')}
-          />
-        )}
-      </div>
+          <div className={`${styles.editor} ${styles.editorWrap}`}>
+            <ComposerEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Write your post…"
+              onSetSpoilerText={setSpoilerText}
+            />
+          </div>
+          <div className={styles.counterRow}>
+            <CharCounter remaining={remaining} />
+          </div>
+          {mode.kind === 'new-topic' && (
+            <PollComposer value={poll} onChange={setPoll} disabled={mutation.isPending} />
+          )}
+          <Select
+            id="compose-visibility"
+            labelText="Visibility"
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as ComposerVisibility)}
+            disabled={mutation.isPending || mode.kind === 'edit'}
+          >
+            <SelectItem value="public" text="Public" />
+            <SelectItem value="unlisted" text="Unlisted" />
+            <SelectItem value="private" text="Followers only" />
+            <SelectItem value="direct" text="Direct message" />
+            {showLocalVisibility && mode.kind === 'new-topic' && (
+              <SelectItem value="local" text="Local only" />
+            )}
+          </Select>
+          {mode.kind === 'edit' && (
+            <p className={styles.hint}>Visibility cannot be changed after posting.</p>
+          )}
+          {mode.kind === 'new-topic' && (
+            <ScheduleField
+              value={scheduledAt}
+              onChange={setScheduledAt}
+              disabled={mutation.isPending}
+            />
+          )}
+          {error && (
+            <InlineNotification
+              kind="error"
+              title="Post failed"
+              subtitle={error}
+              lowContrast
+              onCloseButtonClick={() => setError('')}
+            />
+          )}
+        </div>
+      )}
     </Modal>
   );
 }

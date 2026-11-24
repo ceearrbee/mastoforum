@@ -15,7 +15,7 @@ const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
 const Home = lazy(() => import('./pages/Home'));
 const Feed = lazy(() => import('./pages/Feed'));
 const Board = lazy(() => import('./pages/Board'));
-const Thread = lazy(() => import('./pages/Thread'));
+const ThreadRoute = lazy(() => import('./pages/ThreadRoute'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Messages = lazy(() => import('./pages/Messages'));
@@ -98,7 +98,7 @@ function ThemedApp() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/feed" element={<Feed />} />
                     <Route path="/board/:tag" element={<Board />} />
-                    <Route path="/thread/:id" element={<Thread />} />
+                    <Route path="/thread/:id" element={<ThreadRoute />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scheduled" element={<Scheduled />} />

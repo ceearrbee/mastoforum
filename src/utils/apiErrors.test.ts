@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   errorMessage,
   isRateLimited,
   isUnauthorized,
   isUnprocessable,
+  onUnauthorized,
   rateLimitDelayMs,
+  watchUnauthorizedResponses,
 } from './apiErrors';
 
 describe('error classifiers', () => {
@@ -62,5 +64,59 @@ describe('rateLimitDelayMs', () => {
   it('defaults to 5s when no usable header is present', () => {
     expect(rateLimitDelayMs({ status: 429 })).toBe(5000);
     expect(rateLimitDelayMs({ status: 429, headers: { 'retry-after': 'nonsense' } })).toBe(5000);
+  });
+});
+
+describe('watchUnauthorizedResponses', () => {
+  const realFetch = window.fetch;
+  afterEach(() => {
+    window.fetch = realFetch;
+  });
+
+  function setup(status: number) {
+    window.fetch = vi.fn(async () => new Response('', { status })) as typeof window.fetch;
+    const stop = watchUnauthorizedResponses();
+    const handler = vi.fn();
+    const off = onUnauthorized(handler);
+    return { stop, handler, off };
+  }
+
+  it('reports the bearer token of a request that gets a 401', async () => {
+    const { stop, handler, off } = setup(401);
+    await window.fetch(new Request('https://a.social/api/v1/x', { headers: { Authorization: 'Bearer tok-a' } }));
+    expect(handler).toHaveBeenCalledWith('tok-a');
+    stop();
+    off();
+  });
+
+  it('reads the token from init.headers too', async () => {
+    const { stop, handler, off } = setup(401);
+    await window.fetch('https://a.social/api/v1/x', { headers: { authorization: 'Bearer tok-b' } });
+    expect(handler).toHaveBeenCalledWith('tok-b');
+    stop();
+    off();
+  });
+
+  it('stays silent for non-401 responses and requests without a token', async () => {
+    const ok = setup(200);
+    await window.fetch('https://a.social/x', { headers: { Authorization: 'Bearer t' } });
+    expect(ok.handler).not.toHaveBeenCalled();
+    ok.stop();
+    ok.off();
+
+    const anon = setup(401);
+    await window.fetch('https://a.social/oauth/token');
+    expect(anon.handler).not.toHaveBeenCalled();
+    anon.stop();
+    anon.off();
+  });
+
+  it('restores the original fetch when stopped', () => {
+    const original = vi.fn(async () => new Response('', { status: 401 })) as typeof window.fetch;
+    window.fetch = original;
+    const stop = watchUnauthorizedResponses();
+    expect(window.fetch).not.toBe(original);
+    stop();
+    expect(window.fetch).toBe(original);
   });
 });

@@ -4,10 +4,18 @@ const STORAGE_KEY = 'mastoforum_thread_read';
 const EVENT_NAME = 'mastoforum:thread-read-changed';
 
 interface ThreadReadState {
-  /** Reply count snapshot from when the thread was last marked seen. */
+  /** Direct-reply count (`repliesCount`) when last marked seen; drives unread badges. */
   seenReplies: number;
+  /**
+   * Ids of every descendant on screen when last marked seen. The thread's
+   * descendants are nested depth-first, so a count can't locate the new ones.
+   */
+  seenIds?: string[];
   updatedAt: number;
 }
+
+/** Only the newest threads keep their id lists, to bound localStorage growth. */
+const MAX_THREADS_WITH_IDS = 30;
 
 type ReadMap = Record<string, ThreadReadState>;
 
@@ -31,10 +39,32 @@ function writeAll(map: ReadMap): void {
   }
 }
 
-export function markThreadSeen(threadId: string, repliesCount: number): void {
+export function markThreadSeen(
+  threadId: string,
+  repliesCount: number,
+  seenIds?: readonly string[],
+): void {
   const map = readAll();
-  map[threadId] = { seenReplies: repliesCount, updatedAt: Date.now() };
+  map[threadId] = {
+    seenReplies: repliesCount,
+    ...(seenIds ? { seenIds: [...seenIds] } : {}),
+    updatedAt: Date.now(),
+  };
+  const withIds = Object.entries(map)
+    .filter(([, state]) => state.seenIds)
+    .sort(([, a], [, b]) => b.updatedAt - a.updatedAt);
+  for (const [id] of withIds.slice(MAX_THREADS_WITH_IDS)) delete map[id].seenIds;
   writeAll(map);
+}
+
+/** The first descendant (in thread order) that was not on screen at the last mark. */
+export function firstUnseenId(
+  state: ThreadReadState | undefined,
+  descendantIds: readonly string[],
+): string | undefined {
+  if (!state?.seenIds) return undefined;
+  const seen = new Set(state.seenIds);
+  return descendantIds.find((id) => !seen.has(id));
 }
 
 export function getThreadSeen(threadId: string): ThreadReadState | undefined {
@@ -50,8 +80,9 @@ export function markSeenAfter(
   threadId: string,
   repliesCount: number,
   delay: number,
+  seenIds?: readonly string[],
 ): () => void {
-  const timer = setTimeout(() => markThreadSeen(threadId, repliesCount), delay);
+  const timer = setTimeout(() => markThreadSeen(threadId, repliesCount, seenIds), delay);
   return () => clearTimeout(timer);
 }
 

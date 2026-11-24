@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { mastodon } from 'masto';
@@ -146,5 +146,37 @@ describe('Thread collapsing', () => {
 
     fireEvent.keyDown(document, { key: 'C' });
     expect(container.querySelectorAll('.post-content')).toHaveLength(4);
+  });
+});
+
+describe('Thread first unread reply', () => {
+  const scrollSpy = vi.fn();
+
+  beforeEach(() => {
+    localStorage.clear();
+    scrollSpy.mockClear();
+    Element.prototype.scrollIntoView = scrollSpy;
+  });
+
+  function seed(seenReplies: number, seenIds: string[]) {
+    localStorage.setItem(
+      'mastoforum_thread_read',
+      JSON.stringify({ M: { seenReplies, seenIds, updatedAt: 1 } }),
+    );
+  }
+
+  it('scrolls to a new nested reply that sits mid-list, not to descendants[repliesCount]', async () => {
+    // C1 and C2 were seen (2 direct replies); GC1 is new and sorts between them.
+    seed(2, ['C1', 'C2']);
+    renderThread('tree');
+    await waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    expect((scrollSpy.mock.contexts[0] as HTMLElement).id).toBe('post-GC1');
+  });
+
+  it('does not scroll when every descendant was already seen', async () => {
+    seed(2, ['C1', 'GC1', 'C2']);
+    renderThread('tree');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(scrollSpy).not.toHaveBeenCalled();
   });
 });

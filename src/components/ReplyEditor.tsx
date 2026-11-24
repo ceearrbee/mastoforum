@@ -19,7 +19,7 @@ import { stripHtml, truncate } from '../utils/sanitize';
 import { graphemeLength } from '../utils/text';
 import { getMaxCharacters, getMediaLimits, supportsLocalOnly } from '../utils/instanceConfig';
 import { cleanPollOptions, isPollValid } from '../utils/poll';
-import { createStatusWithLocalFallback } from '../utils/composeStatus';
+import { createStatusWithLocalFallback, stricterVisibility } from '../utils/composeStatus';
 import {
   estimateResolvedContent,
   hasPendingRolls,
@@ -47,6 +47,8 @@ interface PendingAttachment {
 interface Props {
   /** The root status id of the thread. */
   threadId: string;
+  /** Visibility of the thread root; replies never start out looser than it. */
+  rootVisibility?: mastodon.v1.StatusVisibility;
   /** When set, the reply targets this specific post (not the root). */
   replyTo?: mastodon.v1.Status | null;
   onClearReplyTo?: () => void;
@@ -64,7 +66,7 @@ function buildQuotePrefill(target: mastodon.v1.Status): string {
 
 const mb = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`;
 
-export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props) {
+export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClearReplyTo }: Props) {
   const { client } = useAuth();
   const { settings } = useSettings();
   const queryClient = useQueryClient();
@@ -74,7 +76,16 @@ export default function ReplyEditor({ threadId, replyTo, onClearReplyTo }: Props
   const initialDraft = getDraft(threadId);
   const [content, setContent] = useState(initialDraft?.content ?? '');
   const [spoilerText, setSpoilerText] = useState(initialDraft?.spoilerText ?? '');
-  const [visibility, setVisibility] = useState<ComposerVisibility>(settings.defaultVisibility);
+  // The post this reply answers sets a visibility floor: never widen the audience.
+  const parentVisibility = replyTo?.visibility ?? rootVisibility;
+  const [visibility, setVisibility] = useState<ComposerVisibility>(() =>
+    stricterVisibility(settings.defaultVisibility, parentVisibility),
+  );
+  const [clampedFor, setClampedFor] = useState(parentVisibility);
+  if (parentVisibility !== clampedFor) {
+    setClampedFor(parentVisibility);
+    setVisibility((v) => stricterVisibility(v, parentVisibility));
+  }
   const [scheduledAt, setScheduledAt] = useState('');
   const [sensitive, setSensitive] = useState(false);
   const [poll, setPoll] = useState<PollDraft | null>(null);

@@ -18,9 +18,9 @@ const STORAGE = {
   pendingClientId: 'masto_pending_client_id',
   pendingClientSecretKey: 'masto_pending_client_secret',
   // Multi-account store: a map of origin → StoredAccount, plus a pointer to
-  // the active one. The legacy single-account keys above are kept in sync as a
-  // mirror of the active account so `getMastodonCredentials` and the cached
-  // `masto_instance_config` reader keep working unchanged.
+  // the active one. The single-account keys above are legacy: read once by
+  // `migrateLegacyAccount`, then deleted. Only `masto_instance_config` (not a
+  // secret) is still mirrored, for the `instanceConfig` readers.
   accounts: 'mastoforum_accounts',
   activeInstance: 'mastoforum_active_instance',
 } as const;
@@ -59,16 +59,8 @@ function writeAccounts(map: Record<string, StoredAccount>): void {
   localStorage.setItem(STORAGE.accounts, JSON.stringify(map));
 }
 
-/** Mirror an account into the legacy "active account" keys. */
-function mirrorActive(account: StoredAccount): void {
-  localStorage.setItem(STORAGE.instance, account.url);
-  localStorage.setItem(STORAGE.clientId, account.clientId);
-  if (account.clientSecret) {
-    localStorage.setItem(STORAGE.clientSecretKey, account.clientSecret);
-  } else {
-    localStorage.removeItem(STORAGE.clientSecretKey);
-  }
-  localStorage.setItem(STORAGE.accessToken, account.token);
+/** Point the active-account pointer at an account and mirror its instance config. */
+function activate(account: StoredAccount): void {
   if (account.instanceConfig) {
     localStorage.setItem(STORAGE.instanceConfig, account.instanceConfig);
   } else {
@@ -82,7 +74,7 @@ function saveAccount(account: StoredAccount): void {
   const map = readAccounts();
   map[account.url] = account;
   writeAccounts(map);
-  mirrorActive(account);
+  activate(account);
 }
 
 /** All saved accounts, in insertion order. */
@@ -96,29 +88,30 @@ export function getActiveInstanceUrl(): string | null {
 }
 
 /**
- * Make a saved account active, mirroring it into the legacy keys. Returns the
- * resulting credentials, or null if the instance isn't in the store.
+ * Make a saved account active. Returns the resulting credentials, or null if
+ * the instance isn't in the store.
  */
 export function switchActiveAccount(url: string): MastodonCredentials | null {
   const account = readAccounts()[url];
   if (!account) return null;
-  mirrorActive(account);
+  activate(account);
   return { url: account.url, token: account.token };
 }
 
 /**
  * On first load after the multi-account upgrade, fold the legacy single-account
  * keys into the accounts map (keyed by origin) without disturbing any accounts
- * already stored. Idempotent.
+ * already stored, then delete them so the token and client secret are stored
+ * once. Idempotent.
  */
 export function migrateLegacyAccount(): void {
   const url = localStorage.getItem(STORAGE.instance);
   const token = localStorage.getItem(STORAGE.accessToken);
-  const clientId = localStorage.getItem(STORAGE.clientId);
-  if (!url || !token || !clientId) return;
+  if (!url || !token) return;
 
   const map = readAccounts();
   if (!map[url]) {
+    const clientId = localStorage.getItem(STORAGE.clientId) ?? '';
     const instanceConfig = localStorage.getItem(STORAGE.instanceConfig) ?? undefined;
     const clientSecret = localStorage.getItem(STORAGE.clientSecretKey) ?? undefined;
     map[url] = { url, token, clientId, clientSecret, instanceConfig };
@@ -127,12 +120,30 @@ export function migrateLegacyAccount(): void {
   if (!localStorage.getItem(STORAGE.activeInstance)) {
     localStorage.setItem(STORAGE.activeInstance, url);
   }
+  localStorage.removeItem(STORAGE.instance);
+  localStorage.removeItem(STORAGE.clientId);
+  localStorage.removeItem(STORAGE.clientSecretKey);
+  localStorage.removeItem(STORAGE.accessToken);
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/** Reduces user input to an instance origin; https only, http allowed for loopback. */
 export function normaliseInstanceUrl(input: string): string {
-  const trimmed = input.trim().replace(/\/+$/, '');
+  const trimmed = input.trim();
   if (!trimmed) throw new Error('Instance URL is required');
-  return /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  let parsed: URL;
+  try {
+    parsed = new URL(withScheme);
+  } catch {
+    throw new Error('Enter a valid instance address, such as mastodon.social');
+  }
+  const isLoopbackHttp = parsed.protocol === 'http:' && LOOPBACK_HOSTS.has(parsed.hostname);
+  if (parsed.protocol !== 'https:' && !isLoopbackHttp) {
+    throw new Error('Instance URL must use https');
+  }
+  return parsed.origin;
 }
 
 function randomBase64Url(bytes: number): string {
@@ -262,8 +273,7 @@ export async function handleMastodonCallback(code: string, returnedState: string
     // Instance config is best-effort; UI falls back to sensible defaults.
   }
 
-  // Persist to the multi-account store and mirror into the active (legacy)
-  // keys in one step.
+  // Persist to the multi-account store and make it the active account.
   saveAccount({ url, token: tokenData.access_token, clientId, clientSecret, instanceConfig });
 
   sessionStorage.removeItem(STORAGE.oauthState);
@@ -275,9 +285,9 @@ export async function handleMastodonCallback(code: string, returnedState: string
 
 export function getMastodonCredentials(): MastodonCredentials | null {
   migrateLegacyAccount();
-  const url = localStorage.getItem(STORAGE.instance);
-  const token = localStorage.getItem(STORAGE.accessToken);
-  return url && token ? { url, token } : null;
+  const active = localStorage.getItem(STORAGE.activeInstance);
+  const account = active ? readAccounts()[active] : undefined;
+  return account ? { url: account.url, token: account.token } : null;
 }
 
 /**
@@ -287,17 +297,16 @@ export function getMastodonCredentials(): MastodonCredentials | null {
  */
 export async function logoutMastodon(): Promise<MastodonCredentials | null> {
   const creds = getMastodonCredentials();
-  const clientId = localStorage.getItem(STORAGE.clientId);
-  const clientSecret = localStorage.getItem(STORAGE.clientSecretKey) ?? undefined;
+  const account = creds ? readAccounts()[creds.url] : undefined;
 
-  if (creds && clientId) {
+  if (creds && account?.clientId) {
     try {
       await fetch(`${creds.url}/oauth/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          client_id: clientId,
-          ...(clientSecret ? { client_secret: clientSecret } : {}),
+          client_id: account.clientId,
+          ...(account.clientSecret ? { client_secret: account.clientSecret } : {}),
           token: creds.token,
         }),
       });
@@ -312,18 +321,13 @@ export async function logoutMastodon(): Promise<MastodonCredentials | null> {
     writeAccounts(map);
   }
 
-  // Clear the active (legacy) keys and the active pointer.
-  localStorage.removeItem(STORAGE.instance);
-  localStorage.removeItem(STORAGE.clientId);
-  localStorage.removeItem(STORAGE.clientSecretKey);
-  localStorage.removeItem(STORAGE.accessToken);
   localStorage.removeItem(STORAGE.instanceConfig);
   localStorage.removeItem(STORAGE.activeInstance);
 
   // Promote the next remaining account, if any.
   const remaining = listAccounts();
   if (remaining.length > 0) {
-    mirrorActive(remaining[0]);
+    activate(remaining[0]);
     return { url: remaining[0].url, token: remaining[0].token };
   }
 

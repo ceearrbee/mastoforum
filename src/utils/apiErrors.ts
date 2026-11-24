@@ -63,13 +63,43 @@ export function rateLimitDelayMs(err: unknown): number {
   return 5_000;
 }
 
-export function notifyUnauthorized(): void {
-  window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+/** Announce a 401, carrying the access token of the request that failed. */
+export function notifyUnauthorized(token: string): void {
+  window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT, { detail: token }));
 }
 
-export function onUnauthorized(handler: () => void): () => void {
-  window.addEventListener(UNAUTHORIZED_EVENT, handler);
-  return () => window.removeEventListener(UNAUTHORIZED_EVENT, handler);
+export function onUnauthorized(handler: (token: string) => void): () => void {
+  const wrapped = (e: Event) => handler((e as CustomEvent<string>).detail);
+  window.addEventListener(UNAUTHORIZED_EVENT, wrapped);
+  return () => window.removeEventListener(UNAUTHORIZED_EVENT, wrapped);
+}
+
+function bearerToken(input: RequestInfo | URL, init?: RequestInit): string | undefined {
+  const headers = init?.headers ?? (input instanceof Request ? input.headers : undefined);
+  const auth = new Headers(headers).get('Authorization');
+  return /^Bearer\s+(\S+)$/i.exec(auth ?? '')?.[1];
+}
+
+/**
+ * Wrap `window.fetch` so a 401 on a bearer-authenticated request is announced
+ * with that request's token. masto.js errors do not carry the token, so this
+ * is the only point where a late 401 can be tied to the account that sent it.
+ * Returns a function that restores the original fetch.
+ */
+export function watchUnauthorizedResponses(): () => void {
+  const original = window.fetch;
+  window.fetch = async (input, init) => {
+    const response = await original.call(window, input, init);
+    if (response.status === 401) {
+      const token = bearerToken(input, init);
+      if (token) notifyUnauthorized(token);
+    }
+    return response;
+  };
+  const installed = window.fetch;
+  return () => {
+    if (window.fetch === installed) window.fetch = original;
+  };
 }
 
 export interface RateLimitedDetail {

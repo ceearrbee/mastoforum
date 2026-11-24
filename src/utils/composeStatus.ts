@@ -1,6 +1,26 @@
 import type { mastodon } from 'masto';
 import { isUnprocessable } from './apiErrors';
 
+type Visibility = 'public' | 'unlisted' | 'private' | 'direct';
+
+// Higher is stricter; 'local' is a public post kept on the home instance.
+const STRICTNESS: Record<Visibility | 'local', number> = {
+  public: 0,
+  local: 0,
+  unlisted: 1,
+  private: 2,
+  direct: 3,
+};
+
+/** The stricter of a preferred visibility and the post being replied to (direct > private > unlisted > public). */
+export function stricterVisibility<T extends Visibility | 'local'>(
+  preferred: T,
+  parent: Visibility | undefined,
+): T | Visibility {
+  if (!parent) return preferred;
+  return STRICTNESS[parent] > STRICTNESS[preferred] ? parent : preferred;
+}
+
 /**
  * Post a status, transparently falling back to `unlisted` when the instance
  * rejects a `local`-only visibility (vanilla Mastodon doesn't support it, and

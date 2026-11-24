@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { mastodon } from 'masto';
-import { createStatusWithLocalFallback } from './composeStatus';
+import { createStatusWithLocalFallback, stricterVisibility } from './composeStatus';
 
 function clientWith(create: (params: unknown) => Promise<unknown>) {
   return { v1: { statuses: { create } } } as unknown as mastodon.rest.Client;
@@ -45,5 +45,28 @@ describe('createStatusWithLocalFallback', () => {
       createStatusWithLocalFallback(clientWith(create), { status: 'hi', visibility: 'local' }),
     ).rejects.toMatchObject({ statusCode: 500 });
     expect(create).toHaveBeenCalledOnce();
+  });
+});
+
+describe('stricterVisibility', () => {
+  it('raises a looser preference to the parent visibility', () => {
+    expect(stricterVisibility('public', 'private')).toBe('private');
+    expect(stricterVisibility('public', 'direct')).toBe('direct');
+    expect(stricterVisibility('unlisted', 'private')).toBe('private');
+    expect(stricterVisibility('private', 'direct')).toBe('direct');
+  });
+
+  it('keeps a preference that is already as strict or stricter', () => {
+    expect(stricterVisibility('direct', 'public')).toBe('direct');
+    expect(stricterVisibility('private', 'unlisted')).toBe('private');
+    expect(stricterVisibility('unlisted', 'unlisted')).toBe('unlisted');
+    expect(stricterVisibility('public', 'public')).toBe('public');
+  });
+
+  it('treats local-only like public and returns the input when there is no parent', () => {
+    expect(stricterVisibility('local', 'public')).toBe('local');
+    expect(stricterVisibility('local', 'unlisted')).toBe('unlisted');
+    expect(stricterVisibility('local', 'private')).toBe('private');
+    expect(stricterVisibility('public', undefined)).toBe('public');
   });
 });
