@@ -54,6 +54,31 @@ vi.mock('../hooks/api', () => ({
   }),
 }));
 
+// The real editor is a lazily loaded CodeMirror; stand in a fake that exposes the
+// same `.CodeMirror` handle Thread uses to focus it. `loaded: false` mimics the
+// window before the lazy chunk arrives.
+const editorState = vi.hoisted(() => ({ loaded: true, execCommand: vi.fn() }));
+vi.mock('../components/ComposerEditor', () => ({
+  default: () => {
+    if (!editorState.loaded) return null;
+    return (
+      <div
+        className="CodeMirror"
+        ref={(el) => {
+          if (!el) return;
+          const input = el.querySelector('textarea');
+          (el as HTMLElement & { CodeMirror?: unknown }).CodeMirror = {
+            getInputField: () => input,
+            execCommand: editorState.execCommand,
+          };
+        }}
+      >
+        <textarea aria-label="Reply body" />
+      </div>
+    );
+  },
+}));
+
 function renderThread(view: 'flat' | 'tree' = 'tree') {
   localStorage.setItem('masto_settings', JSON.stringify({ threadView: view }));
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -79,7 +104,7 @@ function renderedPostIds(container: HTMLElement): string[] {
 
 function collapseToggleFor(container: HTMLElement, postId: string): HTMLElement {
   const card = container.querySelector(`#post-${postId}`) as HTMLElement;
-  return within(card).getByRole('button', { name: /collapse post|expand post/i });
+  return within(card).getByRole('button', { name: /toggle post/i });
 }
 
 describe('Thread collapsing', () => {
@@ -178,5 +203,33 @@ describe('Thread first unread reply', () => {
     renderThread('tree');
     await new Promise((r) => setTimeout(r, 50));
     expect(scrollSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('Thread reply focus', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    Element.prototype.scrollIntoView = vi.fn();
+    editorState.loaded = true;
+    editorState.execCommand.mockClear();
+  });
+
+  function clickReplyOn(container: HTMLElement, postId: string) {
+    const card = container.querySelector(`#post-${postId}`) as HTMLElement;
+    fireEvent.click(within(card).getByRole('button', { name: /^reply$/i }));
+  }
+
+  it('focuses the editor with the caret at the end when Reply is clicked', () => {
+    const { container } = renderThread('tree');
+    clickReplyOn(container, 'C1');
+    expect(screen.getByLabelText('Reply body')).toHaveFocus();
+    expect(editorState.execCommand).toHaveBeenCalledWith('goDocEnd');
+  });
+
+  it('falls back to the subject field while the editor is still loading', () => {
+    editorState.loaded = false;
+    const { container } = renderThread('tree');
+    clickReplyOn(container, 'C1');
+    expect(screen.getByLabelText(/subject/i)).toHaveFocus();
   });
 });

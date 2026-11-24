@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import type { mastodon } from 'masto';
 import { useAuth } from '../context/AuthContext';
-import { requireClient } from '../utils/client';
 import { clearRecentThreads, useRecentThreads } from '../utils/recentThreads';
-import { useFollowedTags } from '../utils/queries';
+import { useFollowedTags, useLists } from '../hooks/api';
 import ConfirmModal from './ConfirmModal';
 import ListsManagerModal from './ListsManagerModal';
 import styles from './LeftRail.module.css';
@@ -15,18 +12,14 @@ interface Props {
 }
 
 export default function LeftRail({ onNavigate }: Props) {
-  const { client, credentials } = useAuth();
+  const { credentials } = useAuth();
   const recents = useRecentThreads();
   const [listsModalOpen, setListsModalOpen] = useState(false);
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false);
 
   const { data: followedTags = [] } = useFollowedTags();
 
-  const { data: lists = [] } = useQuery<mastodon.v1.List[]>({
-    queryKey: ['lists'],
-    queryFn: async () => await requireClient(client).v1.lists.list(),
-    enabled: !!client,
-  });
+  const { data: lists = [] } = useLists();
 
   if (!credentials) return null;
 
@@ -57,6 +50,11 @@ export default function LeftRail({ onNavigate }: Props) {
           <li>
             <NavLink to="/scheduled" className={styles.link} onClick={onNavigate}>
               Scheduled posts
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/mutes" className={styles.link} onClick={onNavigate}>
+              Muted accounts
             </NavLink>
           </li>
         </ul>

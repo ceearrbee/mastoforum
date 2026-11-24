@@ -92,27 +92,27 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* Dark mode fixes for SimpleMDE */
-@media (prefers-color-scheme: dark) {
-  .editor-toolbar {
-    background: var(--cds-layer);
-    border-color: var(--cds-border-strong);
-  }
-  .editor-toolbar > button {
-    color: var(--cds-icon) !important;
-  }
-  .editor-toolbar > button:hover {
-    background: var(--cds-border-subtle);
-  }
-  .CodeMirror {
-    background: var(--cds-field);
-    color: var(--cds-text-primary);
-    border-color: var(--cds-border-strong);
-  }
-  .editor-preview {
-    background: var(--cds-field);
-    color: var(--cds-text-primary);
-  }
+/* Dark mode fixes for SimpleMDE. Keyed on Carbon's dark theme classes (applied by
+   <Theme> in App.tsx from the in-app setting) rather than prefers-color-scheme,
+   and the extra class also outranks the lazily loaded EasyMDE stylesheet. */
+:is(.cds--g90, .cds--g100) .editor-toolbar {
+  background: var(--cds-layer);
+  border-color: var(--cds-border-strong);
+}
+:is(.cds--g90, .cds--g100) .editor-toolbar > button {
+  color: var(--cds-icon) !important;
+}
+:is(.cds--g90, .cds--g100) .editor-toolbar > button:hover {
+  background: var(--cds-border-subtle);
+}
+:is(.cds--g90, .cds--g100) .CodeMirror {
+  background: var(--cds-field);
+  color: var(--cds-text-primary);
+  border-color: var(--cds-border-strong);
+}
+:is(.cds--g90, .cds--g100) .editor-preview {
+  background: var(--cds-field);
+  color: var(--cds-text-primary);
 }
 
 /* Reading-width: wide setting lets the main column use more of the viewport.

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { mastodon } from 'masto';
 import TopicRow from './TopicRow';
+import { markThreadSeen } from '../utils/readState';
 
 function post(overrides: Partial<mastodon.v1.Status> = {}): mastodon.v1.Status {
   return {
@@ -224,5 +225,34 @@ describe('TopicRow', () => {
     const img = screen.getByRole('img', { name: 'Photo only' });
     expect(img).toBeInTheDocument();
     expect(container.querySelector('.post-content')).toBeNull();
+  });
+});
+
+describe('TopicRow new-reply tag', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('renders a Carbon green tag naming the unread count', () => {
+    markThreadSeen('t1', 4);
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow post={post({ repliesCount: 7 })} />
+      </MemoryRouter>,
+    );
+    const tag = container.querySelector('.cds--tag--green');
+    expect(tag).not.toBeNull();
+    expect(tag).toHaveTextContent('+3 new');
+    expect(screen.getByText('3 new replies')).toBeInTheDocument();
+  });
+
+  it('shows no tag for a thread with nothing unread', () => {
+    markThreadSeen('t1', 7);
+    const { container } = render(
+      <MemoryRouter>
+        <TopicRow post={post({ repliesCount: 7 })} />
+      </MemoryRouter>,
+    );
+    expect(container.querySelector('.cds--tag')).toBeNull();
   });
 });

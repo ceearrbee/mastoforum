@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import {
   useMutation,
   useQuery,
@@ -15,6 +16,7 @@ import { Add, Edit, TrashCan } from '@carbon/icons-react';
 import type { mastodon } from 'masto';
 import { useAuth } from '../context/AuthContext';
 import { requireClient } from '../utils/client';
+import { useLists } from '../hooks/api';
 import AvatarChip from './AvatarChip';
 import ConfirmModal from './ConfirmModal';
 import EmojiText from './EmojiText';
@@ -33,11 +35,7 @@ export default function ListsManagerModal({ open, onClose }: Props) {
   const [newTitle, setNewTitle] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const { data: lists = [] } = useQuery<mastodon.v1.List[]>({
-    queryKey: ['lists'],
-    queryFn: async () => await requireClient(client).v1.lists.list(),
-    enabled: !!client && open,
-  });
+  const { data: lists = [] } = useLists({ enabled: open });
 
   const invalidateLists = () => queryClient.invalidateQueries({ queryKey: ['lists'] });
   const fail = (err: unknown) => setError(errorMessage(err));
@@ -126,6 +124,8 @@ function ListRow({
 }) {
   const { client } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(list.title);
   const [membersOpen, setMembersOpen] = useState(false);
@@ -136,13 +136,22 @@ function ListRow({
     onSuccess: () => {
       setEditing(false);
       onChanged();
+      // The /list/:id page caches the list under its own key for its title.
+      queryClient.invalidateQueries({ queryKey: ['list', list.id] });
     },
     onError,
   });
 
   const remove = useMutation({
     mutationFn: () => requireClient(client).v1.lists.$select(list.id).remove(),
-    onSuccess: onChanged,
+    onSuccess: () => {
+      // Leave the page first so its queries aren't refetched for a list that is gone.
+      const viewing = matchPath('/list/:id', location.pathname)?.params.id === list.id;
+      if (viewing) navigate('/');
+      queryClient.removeQueries({ queryKey: ['list', list.id] });
+      queryClient.removeQueries({ queryKey: ['listTimeline', list.id] });
+      onChanged();
+    },
     onError,
   });
 
@@ -156,7 +165,10 @@ function ListRow({
   const removeMember = useMutation({
     mutationFn: (accountId: string) =>
       requireClient(client).v1.lists.$select(list.id).accounts.remove({ accountIds: [accountId] }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: membersKey });
+      queryClient.invalidateQueries({ queryKey: ['listTimeline', list.id] });
+    },
     onError,
   });
 
@@ -297,6 +309,7 @@ function AddMemberSearch({
       setQuery('');
       setResults([]);
       queryClient.invalidateQueries({ queryKey: membersKey });
+      queryClient.invalidateQueries({ queryKey: ['listTimeline', listId] });
     },
     onError,
   });

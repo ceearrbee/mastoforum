@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Tag } from '@carbon/react';
 import { ChevronDown, ChevronRight } from '@carbon/icons-react';
 import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
@@ -118,9 +119,10 @@ export default function TopicRow({
         <span className={styles.repliesCount}>{display.repliesCount}</span>
         <span className={styles.repliesLabel}>Replies</span>
         {newReplies > 0 && (
-          <span className={styles.newBadge} aria-label={`${newReplies} new replies`}>
-            +{newReplies} new
-          </span>
+          <Tag type="green" size="sm" className={styles.newBadge}>
+            <span aria-hidden="true">+{newReplies} new</span>
+            <VisuallyHidden>{`${newReplies} new ${newReplies === 1 ? 'reply' : 'replies'}`}</VisuallyHidden>
+          </Tag>
         )}
       </div>
     </article>

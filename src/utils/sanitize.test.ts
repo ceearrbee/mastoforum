@@ -111,6 +111,16 @@ describe('stripHtml', () => {
     expect(stripHtml('<p>Tom &amp; Jerry &lt;3</p>')).toBe('Tom & Jerry <3');
   });
 
+  it('decodes quote, apostrophe, numeric and nbsp entities', () => {
+    expect(stripHtml('<p>&quot;hi&quot; it&#39;s &#x1F600; a&nbsp;b</p>')).toBe(
+      '"hi" it\'s \u{1F600} a\u00a0b',
+    );
+  });
+
+  it('keeps an ampersand that follows a decoded entity from being double-decoded', () => {
+    expect(stripHtml('<p>&amp;lt;b&amp;gt;</p>')).toBe('&lt;b&gt;');
+  });
+
   it('turns paragraph boundaries and <br> into newlines', () => {
     expect(stripHtml('<p>one</p><p>two</p>')).toBe('one\n\ntwo');
     expect(stripHtml('<p>a<br>b<br/>c</p>')).toBe('a\nb\nc');

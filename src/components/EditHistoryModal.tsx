@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { InlineLoading, InlineNotification, Modal } from '@carbon/react';
 import { useQuery } from '@tanstack/react-query';
 import type { mastodon } from 'masto';
@@ -24,7 +25,8 @@ export default function EditHistoryModal({ statusId, open, onClose }: Props) {
     staleTime: 60_000,
   });
 
-  return (
+  // Portal to <body> so ancestors that clip fixed content cannot trap the modal.
+  return createPortal(
     <Modal
       open={open}
       onRequestClose={onClose}
@@ -67,6 +69,7 @@ export default function EditHistoryModal({ statusId, open, onClose }: Props) {
         </ol>
       )}
       {data && data.length === 0 && <p>No edit history available.</p>}
-    </Modal>
+    </Modal>,
+    document.body,
   );
 }

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   base64Url,
   buildPkceChallenge,
-  getActiveInstanceUrl,
   getMastodonCredentials,
   handleMastodonCallback,
   listAccounts,
@@ -11,6 +10,8 @@ import {
   normaliseInstanceUrl,
   switchActiveAccount,
 } from './auth';
+
+const activeInstance = () => localStorage.getItem('mastoforum_active_instance');
 
 describe('normaliseInstanceUrl', () => {
   it('prepends https when scheme missing', () => {
@@ -130,7 +131,7 @@ describe('handleMastodonCallback', () => {
     await handleMastodonCallback('code', 's');
 
     expect(listAccounts()[0]).toMatchObject({ url: 'https://example.com', token: 'tok' });
-    expect(getActiveInstanceUrl()).toBe('https://example.com');
+    expect(activeInstance()).toBe('https://example.com');
     // The token lives only in the accounts map, not in a legacy mirror key.
     expect(localStorage.getItem('masto_access_token')).toBeNull();
     expect(localStorage.getItem('masto_instance')).toBeNull();
@@ -196,7 +197,7 @@ describe('migrateLegacyAccount', () => {
       token: 'tok',
       clientId: 'cid',
     });
-    expect(getActiveInstanceUrl()).toBe('https://example.social');
+    expect(activeInstance()).toBe('https://example.social');
   });
 
   it('moves the legacy token and client secret into the map and deletes the legacy keys', () => {
@@ -228,7 +229,7 @@ describe('migrateLegacyAccount', () => {
   it('does nothing when no legacy credentials are present', () => {
     migrateLegacyAccount();
     expect(listAccounts()).toHaveLength(0);
-    expect(getActiveInstanceUrl()).toBeNull();
+    expect(activeInstance()).toBeNull();
   });
 
   it('preserves an existing account already in the map', () => {
@@ -246,7 +247,7 @@ describe('migrateLegacyAccount', () => {
 
     const urls = listAccounts().map((a) => a.url).sort();
     expect(urls).toEqual(['https://a.social', 'https://b.social']);
-    expect(getActiveInstanceUrl()).toBe('https://a.social');
+    expect(activeInstance()).toBe('https://a.social');
   });
 });
 
@@ -268,7 +269,7 @@ describe('switchActiveAccount', () => {
     const creds = switchActiveAccount('https://b.social');
 
     expect(creds).toEqual({ url: 'https://b.social', token: 'b' });
-    expect(getActiveInstanceUrl()).toBe('https://b.social');
+    expect(activeInstance()).toBe('https://b.social');
     expect(getMastodonCredentials()).toEqual({ url: 'https://b.social', token: 'b' });
     expect(localStorage.getItem('masto_instance')).toBeNull();
     expect(localStorage.getItem('masto_access_token')).toBeNull();
@@ -332,7 +333,7 @@ describe('logoutMastodon', () => {
     const result = await logoutMastodon();
 
     expect(result).toBeNull();
-    expect(getActiveInstanceUrl()).toBeNull();
+    expect(activeInstance()).toBeNull();
     expect(localStorage.getItem('mastoforum_accounts')).toBeNull();
   });
 });

@@ -51,10 +51,16 @@ export default function AccountInfoPopover({
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e: MouseEvent) => {
+      // Carbon modals opened from the popover render in <body>, so a click in one
+      // is outside the popover's DOM but must not dismiss it.
+      if ((e.target as Element).closest?.('.cds--modal')) return;
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key !== 'Escape') return;
+      // Escape belongs to an open Carbon modal (e.g. the mute dialog) first.
+      if (document.querySelector('.cds--modal.is-visible')) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);

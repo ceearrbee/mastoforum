@@ -18,6 +18,7 @@ import { errorMessage } from '../utils/apiErrors';
 import { useAuth } from '../context/AuthContext';
 import { useBookmarks, useFavourites, useFollowedTags } from '../hooks/api';
 import { clearRecentThreads, useRecentThreads } from '../utils/recentThreads';
+import PageHeading from '../components/PageHeading';
 import TagPill from '../components/TagPill';
 import ConfirmModal from '../components/ConfirmModal';
 import RecentThreadRow from '../components/RecentThreadRow';
@@ -102,6 +103,7 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
+      <PageHeading className={styles.pageTitle}>Home</PageHeading>
       <AnnouncementsBanner />
 
       <Form action={browseTag} className={styles.searchRow}>

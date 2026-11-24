@@ -18,8 +18,7 @@ import PageHeading from '../components/PageHeading';
 import PaginatedList from '../components/PaginatedList';
 import TagPill from '../components/TagPill';
 import TopicRow from '../components/TopicRow';
-import { stripHtml, truncate } from '../utils/sanitize';
-import { displayNameOf, ACCOUNT_BIO_PREVIEW_CHARS } from '../utils/status';
+import { displayNameOf, previewHtml, ACCOUNT_BIO_PREVIEW_CHARS } from '../utils/status';
 import { normalizeSearchType, type SearchType } from '../utils/search';
 import styles from './Search.module.css';
 
@@ -149,7 +148,7 @@ export default function Search() {
 
 function AccountResultRow({ account }: { account: mastodon.v1.Account }) {
   const name = displayNameOf(account);
-  const bio = truncate(stripHtml(account.note ?? ''), ACCOUNT_BIO_PREVIEW_CHARS);
+  const bio = previewHtml(account.note ?? '', ACCOUNT_BIO_PREVIEW_CHARS);
   return (
     <div className={styles.accountRow}>
       <Link to={`/@${encodeURIComponent(account.acct)}`} className={styles.accountLink}>

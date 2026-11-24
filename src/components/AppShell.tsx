@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import BackToTop from './BackToTop';
 import ErrorBoundary from './ErrorBoundary';
@@ -39,6 +39,30 @@ export default function AppShell() {
 
   const closeNav = useCallback(() => setNavOpen(false), []);
   const toggleNav = useCallback(() => setNavOpen((v) => !v), []);
+  const railRef = useRef<HTMLElement>(null);
+  const wasOpenRef = useRef(navOpen);
+
+  // Overlay-drawer behaviour only (not desktop, not pinned): focus moves into the
+  // drawer on open, and Escape closes it and hands focus back to the toggle.
+  const overlayDrawer = !isDesktopViewport() && !settings.keepNavOpen;
+  useEffect(() => {
+    const justOpened = navOpen && !wasOpenRef.current;
+    wasOpenRef.current = navOpen;
+    if (!navOpen || !overlayDrawer) return;
+    if (justOpened) {
+      railRef.current?.querySelector<HTMLElement>('a[href], button')?.focus();
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      // Carbon modals close on Escape from their own document listener, which
+      // runs after this one; leave that keypress to the modal.
+      if (document.querySelector('.cds--modal.is-visible')) return;
+      setNavOpen(false);
+      document.querySelector<HTMLElement>('[aria-controls="primary-nav"]')?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [navOpen, overlayDrawer]);
 
   const showRail = credentials != null;
 
@@ -54,7 +78,14 @@ export default function AppShell() {
       <Header onMenuToggle={toggleNav} menuExpanded={navOpen} />
       <div className={styles.body}>
         {showRail && (
-          <aside id="primary-nav" className={styles.rail} aria-label="Primary navigation">
+          // `inert` keeps the offscreen drawer's links out of the Tab order while closed.
+          <aside
+            id="primary-nav"
+            ref={railRef}
+            className={styles.rail}
+            aria-label="Primary navigation"
+            inert={!navOpen}
+          >
             <LeftRail onNavigate={closeNav} />
           </aside>
         )}

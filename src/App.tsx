@@ -21,6 +21,7 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Scheduled = lazy(() => import('./pages/Scheduled'));
 const FollowRequests = lazy(() => import('./pages/FollowRequests'));
+const MutedAccounts = lazy(() => import('./pages/MutedAccounts'));
 const ListTimeline = lazy(() => import('./pages/ListTimeline'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Search = lazy(() => import('./pages/Search'));
@@ -103,6 +104,7 @@ function ThemedApp() {
                     <Route path="/messages" element={<Messages />} />
                     <Route path="/scheduled" element={<Scheduled />} />
                     <Route path="/follow-requests" element={<FollowRequests />} />
+                    <Route path="/mutes" element={<MutedAccounts />} />
                     <Route path="/list/:id" element={<ListTimeline />} />
                     <Route path="/search" element={<Search />} />
                     {/* RR7 only treats `:param` as dynamic right after a `/`,

@@ -25,6 +25,8 @@
 }
 
 .posts {
+  /* Query container for PostCard's stacked-layout breakpoint. */
+  container-type: inline-size;
   background-color: var(--cds-layer);
   border: 1px solid var(--cds-border-subtle);
   border-radius: 4px;

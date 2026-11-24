@@ -9,12 +9,18 @@ import { SettingsProvider } from '../context/SettingsContext';
 // onMenuToggle prop as a plain button so a test can open the drawer.
 vi.mock('./Header', () => ({
   default: ({ onMenuToggle }: { onMenuToggle?: () => void }) => (
-    <button type="button" onClick={onMenuToggle}>
+    <button type="button" aria-controls="primary-nav" onClick={onMenuToggle}>
       toggle-menu
     </button>
   ),
 }));
-vi.mock('./LeftRail', () => ({ default: () => <nav>rail</nav> }));
+vi.mock('./LeftRail', () => ({
+  default: () => (
+    <nav>
+      <a href="/rail-target">rail-link</a>
+    </nav>
+  ),
+}));
 vi.mock('./Footer', () => ({ default: () => <footer>footer</footer> }));
 vi.mock('./BackToTop', () => ({ default: () => null }));
 vi.mock('./RateLimitToast', () => ({ default: () => null }));
@@ -58,7 +64,8 @@ function renderShell() {
     container
       .querySelector('button[aria-label="Close navigation"]')
       ?.getAttribute('aria-hidden') === 'false';
-  return { isOpen };
+  const rail = () => container.querySelector('#primary-nav') as HTMLElement;
+  return { isOpen, rail };
 }
 
 describe('AppShell navigation drawer', () => {
@@ -79,6 +86,41 @@ describe('AppShell navigation drawer', () => {
     expect(isOpen()).toBe(true);
 
     fireEvent.click(screen.getByText('go-b'));
+    expect(isOpen()).toBe(true);
+  });
+});
+
+describe('AppShell drawer keyboard access', () => {
+  it('marks the closed drawer inert and clears it when opened', () => {
+    const { rail } = renderShell();
+    expect(rail()).toHaveAttribute('inert');
+
+    fireEvent.click(screen.getByText('toggle-menu'));
+    expect(rail()).not.toHaveAttribute('inert');
+  });
+
+  it('moves focus into the drawer when it opens', () => {
+    renderShell();
+    fireEvent.click(screen.getByText('toggle-menu'));
+    expect(screen.getByText('rail-link')).toHaveFocus();
+  });
+
+  it('closes on Escape and returns focus to the toggle', () => {
+    const { isOpen, rail } = renderShell();
+    const toggle = screen.getByText('toggle-menu');
+    fireEvent.click(toggle);
+    expect(isOpen()).toBe(true);
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+    expect(isOpen()).toBe(false);
+    expect(rail()).toHaveAttribute('inert');
+    expect(toggle).toHaveFocus();
+  });
+
+  it('ignores Escape when the nav is pinned open', () => {
+    localStorage.setItem('masto_settings', JSON.stringify({ keepNavOpen: true }));
+    const { isOpen } = renderShell();
+    fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(isOpen()).toBe(true);
   });
 });

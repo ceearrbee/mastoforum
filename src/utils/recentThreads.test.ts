@@ -93,6 +93,6 @@ describe('recentThreads', () => {
 
   it('clears via empty title fallback when content is empty too', () => {
     recordRecentThread(statusFixture({ content: '', spoilerText: '' }));
-    expect(getRecentThreads()[0].title).toBe('Untitled');
+    expect(getRecentThreads()[0].title).toBe('Untitled topic');
   });
 });

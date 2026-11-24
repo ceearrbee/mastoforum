@@ -5,8 +5,7 @@ import AvatarChip from '../components/AvatarChip';
 import EmojiText from '../components/EmojiText';
 import PageHeading from '../components/PageHeading';
 import PaginatedList from '../components/PaginatedList';
-import { stripHtml, truncate } from '../utils/sanitize';
-import { displayNameOf } from '../utils/status';
+import { displayNameOf, previewText, MESSAGE_PREVIEW_CHARS } from '../utils/status';
 import { relativeTime } from '../utils/time';
 import styles from './Messages.module.css';
 
@@ -56,7 +55,7 @@ export default function Messages() {
             ? participants.map(displayNameOf).join(', ')
             : 'Just you';
           const preview = c.lastStatus
-            ? truncate(stripHtml(c.lastStatus.content), 120)
+            ? previewText(c.lastStatus, MESSAGE_PREVIEW_CHARS)
             : 'No messages';
           return (
             <li key={c.id} className={`${styles.item} ${c.unread ? styles.unreadItem : ''}`}>

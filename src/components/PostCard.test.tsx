@@ -54,17 +54,17 @@ describe('PostCard collapsing', () => {
   it('hides the body and actions when collapsed, and restores them', () => {
     const { container } = renderCard();
 
-    fireEvent.click(screen.getByRole('button', { name: /collapse post/i }));
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
     expect(container.querySelector('.post-content')).toBeNull();
     expect(screen.queryByRole('button', { name: /like/i })).toBeNull();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /expand post/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
     expect(container.querySelector('.post-content')).toHaveTextContent('The whole body.');
   });
 
   it('shows a text teaser while collapsed', () => {
     renderCard();
-    fireEvent.click(screen.getByRole('button', { name: /collapse post/i }));
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
     expect(screen.getByText('The whole body.')).toBeInTheDocument();
   });
 
@@ -77,17 +77,64 @@ describe('PostCard collapsing', () => {
         ] as unknown as mastodon.v1.MediaAttachment[],
       }),
     );
-    fireEvent.click(screen.getByRole('button', { name: /collapse post/i }));
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
     expect(screen.getByText('2 attachments')).toBeInTheDocument();
   });
 
   it('remembers the collapsed state across remounts', () => {
     const first = renderCard();
-    fireEvent.click(screen.getByRole('button', { name: /collapse post/i }));
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
     first.unmount();
 
     const second = renderCard();
     expect(second.container.querySelector('.post-content')).toBeNull();
+  });
+});
+
+describe('PostCard toggle accessibility', () => {
+  it('uses one toggle whose aria-expanded tracks the state and keeps focus', () => {
+    renderCard();
+    const toggle = screen.getByRole('button', { name: /toggle post/i });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    toggle.focus();
+
+    fireEvent.click(toggle);
+    const collapsedToggle = screen.getByRole('button', { name: /toggle post/i });
+    expect(collapsedToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(collapsedToggle).toHaveFocus();
+
+    fireEvent.click(collapsedToggle);
+    const expandedToggle = screen.getByRole('button', { name: /toggle post/i });
+    expect(expandedToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(expandedToggle).toHaveFocus();
+  });
+
+  it('moves focus to the toggle when the collapsed summary expands the post', () => {
+    renderCard();
+    fireEvent.click(screen.getByRole('button', { name: /toggle post/i }));
+    fireEvent.click(screen.getByText('The whole body.'));
+    expect(screen.getByRole('button', { name: /toggle post/i })).toHaveFocus();
+  });
+
+  it('names the like and boost buttons with their counts and keeps pressed state', () => {
+    renderCard(
+      post({
+        favouritesCount: 17,
+        reblogsCount: 3,
+        favourited: true,
+        reblogged: false,
+      }),
+    );
+    const like = screen.getByRole('button', { name: 'Like (17)' });
+    expect(like).toHaveAttribute('aria-pressed', 'true');
+    const boost = screen.getByRole('button', { name: 'Boost (3)' });
+    expect(boost).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('uses the bare verb when there are no likes or boosts', () => {
+    renderCard();
+    expect(screen.getByRole('button', { name: 'Like' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Boost' })).toBeInTheDocument();
   });
 });
 

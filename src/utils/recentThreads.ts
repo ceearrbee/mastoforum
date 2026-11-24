@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { mastodon } from 'masto';
-import { RECENT_THREADS_LIMIT, THREAD_TITLE_CHARS } from '../config';
-import { stripHtml, truncate } from './sanitize';
+import { RECENT_THREADS_LIMIT } from '../config';
+import { statusTitle, UNTITLED_TOPIC } from './status';
 
 export interface RecentThreadAccount {
   acct: string;
@@ -31,7 +31,7 @@ function migrate(raw: unknown): RecentThread[] {
       const obj = r as Partial<RecentThread> & { timestamp?: number };
       return {
         id: obj.id!,
-        title: obj.title ?? 'Untitled',
+        title: obj.title ?? UNTITLED_TOPIC,
         viewedAt: typeof obj.viewedAt === 'number' ? obj.viewedAt : obj.timestamp ?? Date.now(),
         createdAt: obj.createdAt,
         repliesCount: obj.repliesCount,
@@ -52,11 +52,9 @@ export function getRecentThreads(): RecentThread[] {
 
 export function recordRecentThread(post: mastodon.v1.Status): void {
   try {
-    const title =
-      post.spoilerText || truncate(stripHtml(post.content), THREAD_TITLE_CHARS) || 'Untitled';
     const entry: RecentThread = {
       id: post.id,
-      title,
+      title: statusTitle(post),
       viewedAt: Date.now(),
       createdAt: post.createdAt,
       repliesCount: post.repliesCount,

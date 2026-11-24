@@ -8,6 +8,7 @@ import {
   Loading,
 } from '@carbon/react';
 import { VolumeMute } from '@carbon/icons-react';
+import type { Editor } from 'codemirror';
 import type { mastodon } from 'masto';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -61,6 +62,21 @@ const POST_ERROR_FALLBACK = (
     subtitle="This post couldn't be displayed."
   />
 );
+
+/**
+ * Put the caret in the reply editor (CodeMirror once it has loaded, else the
+ * first field) without a second scroll competing with the smooth one.
+ */
+function focusComposer(composer: HTMLElement): void {
+  const cmHost = composer.querySelector<HTMLElement & { CodeMirror?: Editor }>('.CodeMirror');
+  const cm = cmHost?.CodeMirror;
+  if (cm) {
+    cm.getInputField().focus({ preventScroll: true });
+    cm.execCommand('goDocEnd');
+    return;
+  }
+  composer.querySelector<HTMLElement>('textarea, input')?.focus({ preventScroll: true });
+}
 
 export default function Thread() {
   const { id } = useParams<{ id: string }>();
@@ -184,7 +200,10 @@ export default function Thread() {
   useEffect(() => () => dwellCancelRef.current?.(), []);
 
   const scrollToComposer = useCallback(() => {
-    if (composerRef.current) scrollIntoViewMotionSafe(composerRef.current, { block: 'start' });
+    const composer = composerRef.current;
+    if (!composer) return;
+    scrollIntoViewMotionSafe(composer, { block: 'start' });
+    focusComposer(composer);
   }, []);
 
   const readMap = useThreadReadMap();

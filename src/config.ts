@@ -35,9 +35,6 @@ export const FEED_PAGE_SIZE = 40;
 /** How many entries to keep in the recent-threads list. */
 export const RECENT_THREADS_LIMIT = 15;
 
-/** Character cap when generating a thread title from its content. */
-export const THREAD_TITLE_CHARS = 50;
-
 /** Character cap when generating a topic preview from a status. */
 export const TOPIC_PREVIEW_CHARS = 60;
 

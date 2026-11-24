@@ -6,6 +6,9 @@
 }
 
 .sortPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
   padding: 0.375rem 0.875rem;
   font-size: 0.8125rem;
   background: transparent;
@@ -16,6 +19,12 @@
 
 .sortPill:hover {
   background-color: var(--cds-layer-hover);
+}
+
+/* Inset ring: the group's overflow:hidden would clip an outside outline. */
+.sortPill:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
 }
 
 .sortPill[aria-pressed='true'] {

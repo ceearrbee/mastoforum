@@ -17,3 +17,17 @@ export function listParams(
   if (pageParam) params.maxId = pageParam;
   return params;
 }
+
+/**
+ * Next `max_id` from a response's `Link` header. Needed for endpoints (mutes,
+ * blocks) whose cursor is a relationship id, not the last account's id.
+ */
+export function linkNextMaxId(link: string | null): string | undefined {
+  const next = link?.match(/<([^>]+)>\s*;\s*rel="next"/)?.[1];
+  if (!next) return undefined;
+  try {
+    return new URL(next).searchParams.get('max_id') ?? undefined;
+  } catch {
+    return undefined;
+  }
+}

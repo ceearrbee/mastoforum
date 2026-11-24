@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import type { mastodon } from 'masto';
 import { useAuth } from '../context/AuthContext';
 import { requireClient } from '../utils/client';
 import ConfirmModal from './ConfirmModal';
-import { errorMessage } from '../utils/apiErrors';
+import MuteAccountModal from './MuteAccountModal';
+import { useAccountRelationshipActions } from '../hooks/api/useAccountRelationshipActions';
 import { domainOf } from '../utils/handles';
 import { useCurrentUser } from '../utils/queries';
 import styles from './AccountActionMenu.module.css';
@@ -21,9 +22,8 @@ interface Props {
 /** Follow/unfollow + mute/block/report for one account; renders nothing for your own. */
 export default function AccountActionMenu({ account, showFollowButton = true, size = 'md' }: Props) {
   const { client } = useAuth();
-  const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
   const [confirmReport, setConfirmReport] = useState(false);
+  const [muteOpen, setMuteOpen] = useState(false);
 
   const { data: currentUser } = useCurrentUser();
 
@@ -39,20 +39,13 @@ export default function AccountActionMenu({ account, showFollowButton = true, si
 
   const domain = domainOf(account.acct);
 
-  const mutation = useMutation({
-    mutationFn: (run: () => Promise<unknown>) => run(),
-    onMutate: () => setError(null),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: relationshipKey });
-      queryClient.invalidateQueries({ queryKey: ['account', account.acct] });
-    },
-    onError: (err) => setError(errorMessage(err)),
-  });
+  const actions = useAccountRelationshipActions(account);
+  const { error, isPending } = actions;
 
   // Don't offer actions on your own account.
   if (currentUser && currentUser.id === account.id) return null;
 
-  const run = (fn: () => Promise<unknown>) => () => mutation.mutate(fn);
+  const run = (fn: () => Promise<unknown>) => () => actions.run(fn);
   const sel = () => requireClient(client).v1.accounts.$select(account.id);
 
   const following = relationship?.following ?? false;
@@ -77,7 +70,7 @@ export default function AccountActionMenu({ account, showFollowButton = true, si
         <Button
           kind={following || requested ? 'tertiary' : 'primary'}
           size={size}
-          disabled={!relationship || mutation.isPending}
+          disabled={!relationship || isPending}
           onClick={run(() => (following || requested ? sel().unfollow() : sel().follow()))}
         >
           {followLabel}
@@ -92,12 +85,12 @@ export default function AccountActionMenu({ account, showFollowButton = true, si
       >
         <OverflowMenuItem
           itemText={muting ? 'Unmute' : 'Mute'}
-          onClick={run(() => (muting ? sel().unmute() : sel().mute()))}
+          onClick={() => (muting ? actions.unmute() : setMuteOpen(true))}
         />
         <OverflowMenuItem
           itemText={blocking ? 'Unblock' : 'Block'}
           isDelete={!blocking}
-          onClick={run(() => (blocking ? sel().unblock() : sel().block()))}
+          onClick={() => (blocking ? actions.unblock() : actions.block())}
         />
         {domain && (
           <OverflowMenuItem
@@ -119,13 +112,20 @@ export default function AccountActionMenu({ account, showFollowButton = true, si
         />
       </OverflowMenu>
 
+      <MuteAccountModal
+        open={muteOpen}
+        acct={account.acct}
+        onConfirm={actions.mute}
+        onClose={() => setMuteOpen(false)}
+      />
+
       <ConfirmModal
         open={confirmReport}
         heading="Report account"
         primaryText="Report"
         danger
         onConfirm={() =>
-          mutation.mutate(() => requireClient(client).v1.reports.create({ accountId: account.id }))
+          actions.run(() => requireClient(client).v1.reports.create({ accountId: account.id }))
         }
         onClose={() => setConfirmReport(false)}
       >

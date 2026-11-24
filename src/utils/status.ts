@@ -37,7 +37,12 @@ export function statusTitle(status: mastodon.v1.Status): string {
   );
 }
 
+/** Plain-text, truncated preview of an HTML snippet (a status body or an account bio). */
+export function previewHtml(html: string, chars: number): string {
+  return truncate(stripHtml(html), chars);
+}
+
 /** Plain-text, truncated preview of a status's HTML content. */
 export function previewText(status: mastodon.v1.Status, chars: number): string {
-  return truncate(stripHtml(status.content), chars);
+  return previewHtml(status.content, chars);
 }

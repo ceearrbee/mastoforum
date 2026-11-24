@@ -19,6 +19,7 @@
 
 .right {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
@@ -31,12 +32,21 @@
 }
 
 .viewPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   background: transparent;
   border: none;
   color: var(--cds-text-secondary);
   cursor: pointer;
+}
+
+/* Inset ring: the group's overflow:hidden would clip an outside outline. */
+.viewPill:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: -2px;
 }
 
 .viewPill[aria-pressed='true'] {

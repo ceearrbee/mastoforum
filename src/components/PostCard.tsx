@@ -1,4 +1,4 @@
-import { useState, type Ref } from 'react';
+import { useLayoutEffect, useRef, useState, type Ref } from 'react';
 import { OverflowMenu, OverflowMenuItem, Button } from '@carbon/react';
 import {
   Bookmark,
@@ -20,6 +20,7 @@ import EditHistoryModal from './EditHistoryModal';
 import EmojiText from './EmojiText';
 import MediaList from './MediaList';
 import PollRenderer from './PollRenderer';
+import PostAccountMenu from './PostAccountMenu';
 import QuoteContext from './QuoteContext';
 import SanitizedHtml from './SanitizedHtml';
 import VisuallyHidden from './VisuallyHidden';
@@ -67,6 +68,11 @@ function clampDepth(depth: number): number {
   return Math.min(6, depth);
 }
 
+/** Accessible name for a count-only button, e.g. "Like (17)"; pressed state comes from aria-pressed. */
+function countLabel(verb: string, count: number): string {
+  return count > 0 ? `${verb} (${count})` : verb;
+}
+
 function postUrl(post: mastodon.v1.Status): string {
   return `#post-${post.id}`;
 }
@@ -92,6 +98,19 @@ export default function PostCard({
   const collapseMap = useCollapseMap();
   const indent = clampDepth(depth);
   const collapsed = isPostCollapsed(collapseMap, post.id, defaultCollapsed);
+  // Collapsing swaps the card's layout, which remounts the toggle. Remember that
+  // the user just used it, then put focus back on the new instance.
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const refocusToggle = useRef(false);
+  const toggleCollapse = () => {
+    refocusToggle.current = true;
+    togglePostCollapse(post.id, defaultCollapsed);
+  };
+  useLayoutEffect(() => {
+    if (!refocusToggle.current) return;
+    refocusToggle.current = false;
+    toggleRef.current?.focus();
+  }, [collapsed]);
   const className = [
     styles.card,
     collapsed ? styles.collapsed : null,
@@ -124,6 +143,23 @@ export default function PostCard({
     .filter(Boolean)
     .join(' · ');
 
+  // One toggle for both states; its accessible name stays fixed and
+  // aria-expanded carries the state.
+  const collapseToggle = (
+    <button
+      ref={toggleRef}
+      type="button"
+      className={styles.collapseToggle}
+      aria-expanded={!collapsed}
+      aria-controls={`post-body-${display.id}`}
+      title={collapsed ? 'Expand post' : 'Collapse post'}
+      onClick={toggleCollapse}
+    >
+      {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+      <VisuallyHidden>Toggle post</VisuallyHidden>
+    </button>
+  );
+
   return (
     <article id={`post-${display.id}`} className={className} ref={ref} tabIndex={tabIndex}>
       {booster && (
@@ -142,17 +178,7 @@ export default function PostCard({
 
       {collapsed ? (
         <div className={styles.collapsedRow}>
-          <button
-            type="button"
-            className={styles.collapseToggle}
-            aria-expanded={false}
-            aria-controls={`post-body-${display.id}`}
-            title="Expand post"
-            onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
-          >
-            <ChevronRight size={16} />
-            <VisuallyHidden>Expand post</VisuallyHidden>
-          </button>
+          {collapseToggle}
           <AccountInfoPopover account={display.account}>
             <AvatarChip account={display.account} size="sm" />
             <span className={styles.collapsedAuthor}>
@@ -166,7 +192,9 @@ export default function PostCard({
             type="button"
             className={styles.collapsedSummary}
             id={`post-body-${display.id}`}
-            onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
+            onClick={toggleCollapse}
+            // Mouse shortcut only: the toggle button is the keyboard stop.
+            tabIndex={-1}
             title="Expand post"
           >
             <span className={styles.collapsedText}>
@@ -202,17 +230,7 @@ export default function PostCard({
           <div className={styles.messagePane} id={`post-body-${display.id}`}>
             <header className={styles.messageHeader}>
               <div className={styles.messageHeaderLeft}>
-                <button
-                  type="button"
-                  className={styles.collapseToggle}
-                  aria-expanded={true}
-                  aria-controls={`post-body-${display.id}`}
-                  title="Collapse post"
-                  onClick={() => togglePostCollapse(post.id, defaultCollapsed)}
-                >
-                  <ChevronDown size={16} />
-                  <VisuallyHidden>Collapse post</VisuallyHidden>
-                </button>
+                {collapseToggle}
                 <a href={postUrl(display)} className={styles.timeLink}>
                   <time dateTime={display.createdAt}>{new Date(display.createdAt).toLocaleString()}</time>
                 </a>
@@ -234,7 +252,7 @@ export default function PostCard({
                     onClick={() => setHistoryOpen(true)}
                     title="This post contains a dice roll and was edited after posting. Click to view edit history."
                   >
-                    <WarningAlt size={12} /> roll edited
+                    <WarningAlt size={12} className={styles.rollEditedIcon} /> roll edited
                   </button>
                 ) : edited ? (
                   <button
@@ -261,6 +279,7 @@ export default function PostCard({
                     )}
                   </OverflowMenu>
                 )}
+                {!isOwn && <PostAccountMenu account={display.account} />}
               </div>
             </header>
 
@@ -299,9 +318,9 @@ export default function PostCard({
                   onClick={() => onAction(display.id, display.favourited ? 'unfavourite' : 'favourite')}
                   className={display.favourited ? styles['actionActive--favourite'] : undefined}
                   aria-pressed={!!display.favourited}
+                  aria-label={countLabel('Like', display.favouritesCount)}
                 >
                   {display.favouritesCount || 'Like'}
-                  {display.favourited && <VisuallyHidden>(liked)</VisuallyHidden>}
                 </Button>
                 <Button
                   kind="ghost"
@@ -310,9 +329,9 @@ export default function PostCard({
                   onClick={() => onAction(display.id, display.reblogged ? 'unreblog' : 'reblog')}
                   className={display.reblogged ? styles['actionActive--reblog'] : undefined}
                   aria-pressed={!!display.reblogged}
+                  aria-label={countLabel('Boost', display.reblogsCount)}
                 >
                   {display.reblogsCount || 'Boost'}
-                  {display.reblogged && <VisuallyHidden>(boosted)</VisuallyHidden>}
                 </Button>
                 <Button
                   kind="ghost"

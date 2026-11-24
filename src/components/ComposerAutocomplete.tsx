@@ -94,9 +94,12 @@ export default function ComposerAutocomplete({ cm }: Props) {
     };
   }, [cm, close]);
 
-  // Debounced search for the active token.
+  // Debounced search for the active token. `ignore` drops the result of a
+  // search whose token has since changed, so a slow older reply can't overwrite
+  // newer suggestions.
   useEffect(() => {
     if (!client || !token || token.query.length < 1) return;
+    let ignore = false;
     const handle = setTimeout(() => {
       const type = token.type === 'mention' ? 'accounts' : 'hashtags';
       void (async () => {
@@ -107,6 +110,7 @@ export default function ComposerAutocomplete({ cm }: Props) {
             limit: 6,
             resolve: false,
           });
+          if (ignore) return;
           if (token.type === 'mention') {
             setAccounts(res.accounts);
             setTags([]);
@@ -126,12 +130,16 @@ export default function ComposerAutocomplete({ cm }: Props) {
           }
           setSelected(0);
         } catch {
+          if (ignore) return;
           setAccounts([]);
           setTags([]);
         }
       })();
     }, 200);
-    return () => clearTimeout(handle);
+    return () => {
+      ignore = true;
+      clearTimeout(handle);
+    };
   }, [client, queryClient, token]);
 
   // Bind editor navigation keys only while the popover is open.

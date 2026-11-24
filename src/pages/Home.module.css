@@ -4,6 +4,12 @@
   gap: 1.75rem;
 }
 
+.pageTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
 .searchRow {
   display: flex;
   gap: 0.5rem;

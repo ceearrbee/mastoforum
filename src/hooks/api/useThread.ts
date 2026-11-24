@@ -29,7 +29,7 @@ interface UseThreadOptions {
  * view replaces it in place; a new reply within the thread is appended; anything
  * else leaves the cache untouched.
  */
-function mergeStreamedStatus(prev: ThreadData, status: mastodon.v1.Status): ThreadData {
+export function mergeStreamedStatus(prev: ThreadData, status: mastodon.v1.Status): ThreadData {
   const known = new Set<string>([
     prev.mainPost.id,
     ...prev.ancestors.map((p) => p.id),

@@ -5,7 +5,7 @@ import type { mastodon } from 'masto';
 import AvatarChip from './AvatarChip';
 import EmojiText from './EmojiText';
 import AccountActionMenu from './AccountActionMenu';
-import { stripHtml, truncate } from '../utils/sanitize';
+import { previewHtml, ACCOUNT_BIO_PREVIEW_CHARS } from '../utils/status';
 import styles from './SuggestionCard.module.css';
 
 interface Props {
@@ -13,13 +13,11 @@ interface Props {
   onDismiss: () => void;
 }
 
-const BIO_CHARS = 120;
-
 /** A single "who to follow" card; dismissing it removes the suggestion server-side. */
 export default function SuggestionCard({ suggestion, onDismiss }: Props) {
   const { account } = suggestion;
   const name = account.displayName || account.username;
-  const bio = truncate(stripHtml(account.note ?? ''), BIO_CHARS);
+  const bio = previewHtml(account.note ?? '', ACCOUNT_BIO_PREVIEW_CHARS);
 
   return (
     <div className={styles.card}>

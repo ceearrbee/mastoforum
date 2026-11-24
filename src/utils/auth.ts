@@ -82,11 +82,6 @@ export function listAccounts(): StoredAccount[] {
   return Object.values(readAccounts());
 }
 
-/** The origin URL of the currently active account, if any. */
-export function getActiveInstanceUrl(): string | null {
-  return localStorage.getItem(STORAGE.activeInstance) ?? localStorage.getItem(STORAGE.instance);
-}
-
 /**
  * Make a saved account active. Returns the resulting credentials, or null if
  * the instance isn't in the store.

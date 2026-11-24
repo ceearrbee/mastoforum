@@ -18,6 +18,7 @@ import Messages from '../pages/Messages';
 import Notifications from '../pages/Notifications';
 import FollowRequests from '../pages/FollowRequests';
 import Scheduled from '../pages/Scheduled';
+import MutedAccounts from '../pages/MutedAccounts';
 
 afterEach(cleanup);
 
@@ -54,6 +55,7 @@ describe('heading structure', () => {
     ['Notifications', <Notifications key="n" />],
     ['Follow requests', <FollowRequests key="f" />],
     ['Scheduled', <Scheduled key="s" />],
+    ['Muted accounts', <MutedAccounts key="mu" />],
   ])('signed-out %s renders exactly one h1', (_label, ui) => {
     const { container } = renderWithProviders(ui);
     expect(container.querySelectorAll('h1')).toHaveLength(1);

@@ -23,7 +23,8 @@
   text-decoration: none;
   color: var(--cds-text-primary);
   min-width: 0;
-  padding-right: 1.5rem;
+  /* Clear the 32px dismiss button pinned in the top-right corner. */
+  padding-right: 2.5rem;
 }
 
 .names {

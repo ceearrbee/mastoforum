@@ -71,6 +71,19 @@ export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClear
   const { settings } = useSettings();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Blob preview URLs not yet revoked; the unmount cleanup frees whatever is left.
+  const previewUrls = useRef(new Set<string>());
+  useEffect(() => {
+    const urls = previewUrls.current;
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.clear();
+    };
+  }, []);
+  const revokePreview = (url: string) => {
+    URL.revokeObjectURL(url);
+    previewUrls.current.delete(url);
+  };
 
   // Hydrate from a saved draft for this thread, if any.
   const initialDraft = getDraft(threadId);
@@ -127,12 +140,14 @@ export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClear
     const files = Array.from(fileList).slice(0, 4 - attachments.length);
     for (const file of files) {
       const id = crypto.randomUUID();
+      const previewUrl = URL.createObjectURL(file);
+      previewUrls.current.add(previewUrl);
       const pending: PendingAttachment = {
         id,
         file,
         description: '',
         uploading: true,
-        previewUrl: URL.createObjectURL(file),
+        previewUrl,
       };
       setAttachments((prev) => [...prev, pending]);
       uploadFile(file)
@@ -161,11 +176,9 @@ export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClear
   };
 
   const removeAttachment = (id: string) => {
-    setAttachments((prev) => {
-      const target = prev.find((a) => a.id === id);
-      if (target) URL.revokeObjectURL(target.previewUrl);
-      return prev.filter((a) => a.id !== id);
-    });
+    const target = attachments.find((a) => a.id === id);
+    if (target) revokePreview(target.previewUrl);
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
   const updateDescription = (id: string, description: string) => {
@@ -197,25 +210,25 @@ export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClear
       if (poll && !isPollValid(poll.options)) {
         throw new Error('A poll needs at least two distinct, non-empty options');
       }
-      await Promise.all(
-        attachments
-          .filter((a) => a.attachmentId && a.description.trim())
-          .map((a) =>
-            client.v1.media
-              .$select(a.attachmentId!)
-              .update({ description: a.description.trim() })
-              .catch(() => undefined),
-          ),
+      // Don't post media the author described if the description didn't save.
+      const withAlt = attachments.filter((a) => a.attachmentId && a.description.trim());
+      const saved = await Promise.allSettled(
+        withAlt.map((a) =>
+          client.v1.media.$select(a.attachmentId!).update({ description: a.description.trim() }),
+        ),
       );
+      const failedNames = withAlt.filter((_, i) => saved[i].status === 'rejected').map((a) => a.file.name);
+      if (failedNames.length > 0) {
+        throw new Error(
+          `Could not save the alt text for ${failedNames.join(', ')}. Nothing was posted; try again.`,
+        );
+      }
       const params: Record<string, unknown> = {
         status: tabletop ? resolveRollCommands(content) : content,
         inReplyToId: replyTo?.id ?? threadId,
         visibility,
         spoilerText,
       };
-      if (replyTo?.account?.id) {
-        params.allowedMentions = [replyTo.account.id];
-      }
       if (readyAttachmentIds.length > 0) {
         params.mediaIds = readyAttachmentIds;
         if (sensitive) params.sensitive = true;
@@ -241,7 +254,7 @@ export default function ReplyEditor({ threadId, rootVisibility, replyTo, onClear
       setScheduledAt('');
       setSensitive(false);
       setPoll(null);
-      attachments.forEach((a) => URL.revokeObjectURL(a.previewUrl));
+      attachments.forEach((a) => revokePreview(a.previewUrl));
       setAttachments([]);
       setPrefilledFor(null);
       setHadDraft(false);

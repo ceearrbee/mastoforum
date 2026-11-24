@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Modal } from '@carbon/react';
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 /**
  * A small Carbon-styled confirmation dialog, replacing native `window.confirm`
  * for destructive actions so they match the app's look and feel.
+ * Portaled to body so a contained or overflow-hidden ancestor cannot clip it.
  */
 export default function ConfirmModal({
   open,
@@ -28,7 +30,7 @@ export default function ConfirmModal({
   onConfirm,
   onClose,
 }: Props) {
-  return (
+  return createPortal(
     <Modal
       open={open}
       danger={danger}
@@ -43,6 +45,7 @@ export default function ConfirmModal({
       onRequestClose={onClose}
     >
       <p>{children}</p>
-    </Modal>
+    </Modal>,
+    document.body,
   );
 }

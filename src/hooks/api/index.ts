@@ -11,9 +11,12 @@ export { useOffsetList } from './useOffsetList';
 export { useConversations } from './useConversations';
 export { useNotificationsList } from './useNotificationsList';
 export { useFollowRequests } from './useFollowRequests';
+export { useMutes, type MutedAccount } from './useMutes';
+export { useAccountRelationshipActions } from './useAccountRelationshipActions';
 export { useScheduledStatuses } from './useScheduledStatuses';
 export { useAccountStatuses } from './useAccountStatuses';
 export { useListTimeline } from './useListTimeline';
+export { useLists } from './useLists';
 export { useFeedTimeline, type FeedSource } from './useFeedTimeline';
 // Badge counts + discovery + live search, centralised out of components.
 export { useNotificationCount } from './useNotificationCount';
